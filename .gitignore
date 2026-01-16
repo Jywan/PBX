@@ -13,3 +13,6 @@ __pycache__/
 
 # Asterisk runtime / config (local only)
 asterisk/
+
+# Docker
+docker-compose.yml
