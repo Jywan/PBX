@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.env.*
+
+# OS / Editor
+.DS_Store
+.vscode/
+
+# Asterisk runtime / config (local only)
+asterisk/
