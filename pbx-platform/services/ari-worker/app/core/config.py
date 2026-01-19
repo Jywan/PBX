@@ -12,6 +12,8 @@ class Settings:
     ari_user: str
     ari_pass: str
 
+    database_url: str 
+
     @property
     def ari_base(self) -> str:
         return f"http://{self.ari_host}:{self.ari_port}/ari"
@@ -36,6 +38,7 @@ def load_settings() -> Settings:
         ari_app = os.getenv("ARI_APP", "").strip(),
         ari_user = os.getenv("ARI_USER", "").strip(),
         ari_pass = os.getenv("ARI_PASS", "").strip(),
+        database_url=os.getenv("DATABASE_URL", "").strip(),
     )
 
     missing = [k for k, v in {
@@ -43,6 +46,7 @@ def load_settings() -> Settings:
         "ARI_APP": s.ari_app,
         "ARI_USER": s.ari_user,
         "ARI_PASS": s.ari_pass,
+        "DATABASE_URL": s.database_url,
     }.items() if not v]
 
     if missing:
