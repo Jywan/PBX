@@ -38,9 +38,19 @@ class CallService:
         if not ev.etype:
             return
         
+        # StasisStart 선처리 (call_id 매핑을 먼저 잡는다)
         if ev.etype == "StasisStart":
             await self._on_stasis_start(ev)
 
+        # Bridge 매핑 선처리 (raw에서 bridge.id를 뽑아 channel->bridge 갱신)
+        if ev.channel_id:
+                b = (ev.raw.get("bridge") or {})
+                b_id = b.get("id")
+                if b_id:
+                    async with self._lock:
+                        self._channel_to_bridge[ev.channel_id] = b_id
+
+        # ts 파싱
         ts: Optional[datetime] = None
         if ev.timestamp:
             t = ev.timestamp
@@ -51,14 +61,15 @@ class CallService:
             except Exception:
                 ts = None
 
+        # call_id / bridge_id 조회
         call_id: Optional[uuid.UUID] = None
         bridge_id: Optional[str] = None
-
         if ev.channel_id:
             async with self._lock:
                 call_id = self._channel_to_call.get(ev.channel_id)
                 bridge_id = self._channel_to_bridge.get(ev.channel_id)
-
+        
+        # 이벤트 적재
         await self.recorder.add_event(
             call_id=call_id,
             ts=ts,
@@ -68,7 +79,8 @@ class CallService:
             raw=ev.raw,
         )
 
-        if ev.etype in ("ChannelHangupRequest", "ChannelDestroyed", "StasisEnd"):
+        # 종료 이벤트 처리
+        if ev.etype in ("ChannelHangupRequest", "ChannelDestroyed"):
             await self._on_hangup_like(ev)
             return
         
@@ -185,7 +197,7 @@ class CallService:
 
         if not call_id:
             return
-        
+
         ended_at: Optional[datetime] = None
         if ev.timestamp:
             t = ev.timestamp
@@ -196,11 +208,28 @@ class CallService:
             except Exception:
                 ended_at = None
         
+        cause: Optional[int] = None
+        cause_txt: Optional[str] = None
+
+        raw = ev.raw or {}
+        c = raw.get("cause")
+        if isinstance(c, int):
+            cause = c
+        elif isinstance(c, str) and c.isdigit():
+            cause = int(c)
+
+        ct = raw.get("cause_txt") or raw.get("causeText")  # 혹시 변형 대비
+        if isinstance(ct, str) and ct.strip():
+            cause_txt = ct.strip()
+        else:
+            # cause_txt가 없으면 이벤트 타입이라도 남겨 추적 가능하게
+            cause_txt = ev.etype
+
         await self.recorder.mark_ended(
             call_id=call_id,
             ended_at=ended_at,
-            hangup_cause=None,
-            hangup_reason=ev.etype
+            hangup_cause=cause,
+            hangup_reason=cause_txt,
         )
         
         await self._terminate_call(call_id)
