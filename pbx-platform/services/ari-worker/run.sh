@@ -8,4 +8,4 @@ export PYTHONPATH=$PYTHONPATH:../../libs
 
 echo "Staring ARI Worker..."
 
-./.venv/bin/python -m app.main
+../../.venv/bin/python -m app.main

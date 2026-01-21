@@ -1,19 +1,25 @@
-from __future__ import annotations
-
 from fastapi import FastAPI
+from app.core.config import get_settings
 
-from app.core.config import load_settings
-from app.db.session import init_db
-from app.routes.health import router as health_router
-from app.routes.calls import router as calls_router
+from app.routes import calls
 
-def create_app() -> FastAPI:
-    settings = load_settings()
-    init_db(settings)
+# 설정 로드
+settings = get_settings()
 
-    app = FastAPI(title=settings.api_title, version=settings.api_version)
-    app.include_router(health_router, prefix="/api")
-    app.include_router(calls_router, prefix="/api")
-    return app
+def create_application() -> FastAPI:
+    application = FastAPI(
+        title=settings.api_title,
+        version=settings.api_version,
+    )
 
-app = create_app() 
+    # 라우터 추가 공간
+    application.include_router(calls.router, prefix="/api/v1", tags=["calls"])
+    
+    return application
+
+app = create_application()
+
+# 헬스 체크
+@app.get("/")
+async def root():
+    return {"message": "PBX API Server is Running"}

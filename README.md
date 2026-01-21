@@ -33,8 +33,11 @@
 
 ## api (web)
 - /pbx-platform/services/api 이동후 run
-- run(dev): uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-- run(prod)
-- FastAPI
+- run: ./run.sh 
+
+
+## ari-worker + api 동시 run
+- /pbx-platform 
+- run: ./dev.sh
 
 

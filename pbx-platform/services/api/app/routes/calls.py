@@ -1,59 +1,33 @@
-from __future__ import annotations
-
-import uuid
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-from app.deps.common import get_db
-from pbx_common.models import Call, CallEvent
+from pbx_common.models import Call
+from app.db.session import get_db
+from app.schemas.call import CallResponse
 
-router = APIRouter(tags=["calls"])
+router = APIRouter()
 
-@router.get("/calls")
-async def list_calls(db: AsyncSession = Depends(get_db)):
-    rows = (await db.execute(select(Call).order_by(Call.created_at.desc()).limit(50))).scalars().all()
-    return [
-        {
-            "id": str(x.id),
-            "caller_exten": x.caller_exten,
-            "callee_exten": x.callee_exten,
-            "status": x.status,
-            "started_at": x.started_at,
-            "answered_at": x.answered_at,
-            "ended_at": x.ended_at,
-        }
-        for x in rows
-    ]
+@router.get("/calls", response_model=List[CallResponse])
+async def read_calls(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        query = (
+            select(Call)
+            .order_by(Call.started_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
 
-@router.get("/calls/{call_id}")
-async def get_call(call_id: uuid.UUID, db:AsyncSession = Depends(get_db)):
-    call = (await db.execute(select(Call).where(Call.id == call_id))).scalar_one_or_none()
-    if not call:
-        return {"error": "not_found"}
+        result = await db.execute(query)
+        calls = result.scalars().all()
+
+        return calls
     
-    events = (await db.execute(
-        select(CallEvent).where(CallEvent.call_id == call_id).order_by(CallEvent.ts.asc())
-    )).scalars().all()
-
-    return {
-        "calls": {
-            "id": str(call.id),
-            "caller_exten": call.caller_exten,
-            "callee_exten": call.callee_exten,
-            "status": call.status,
-            "answered_at": call.answered_at,
-            "ended_at": call.ended_at,
-            "hangup_cause": call.hangup_cause,
-            "hangup_reason": call.hangup_reason,
-        },
-        "events": [
-            {
-                "ts": e.ts,
-                "type": e.type,
-                "channel_id": e.channel_id,
-                "bridge_id": e.bridge_id,
-            }
-            for e in events
-        ],
-    }
+    except Exception as e:
+        print(f"Error fetching calls: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
