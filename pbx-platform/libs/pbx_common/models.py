@@ -1,11 +1,11 @@
-# pbx-platform/libs/pbx_common/pbx_common/models.py
 from __future__ import annotations
 
+import enum
 import uuid
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import BigInteger, Integer, Text, Index, func
+from sqlalchemy import BigInteger, Integer, Text, Index, Boolean, func, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB, TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -13,7 +13,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 class Base(DeclarativeBase):
     pass
 
-
+# 통화 테이블
 class Call(Base):
     __tablename__ = "calls"
 
@@ -44,7 +44,7 @@ class Call(Base):
 Index("idx_calls_created_at", Call.created_at)
 Index("idx_calls_extens", Call.caller_exten, Call.callee_exten)
 
-
+# 통화 이벤트 테이블
 class CallEvent(Base):
     __tablename__ = "call_events"
 
@@ -65,3 +65,24 @@ Index("idx_call_events_call_id", CallEvent.call_id)
 Index("idx_call_events_ts", CallEvent.ts)
 Index("idx_call_events_type", CallEvent.type)
 Index("idx_call_events_channel_id", CallEvent.channel_id)
+
+# 사용자 테이블
+class User(Base):
+    __tablename__ = "user"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    account: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    exten: Mapped[str] = mapped_column(Text, nullable=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    role: Mapped[str] = mapped_column(Text, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+    create_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    update_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True, server_default=func.now(),
+                                                onupdate=func.now(),)
+    deactivated_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+
+Index("idx_user_account", User.account)
+Index("idx_user_exten", User.exten)
+Index("idx_user_is_active", User.is_active)
+Index("idx_user_role", User.role)

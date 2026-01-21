@@ -34,10 +34,19 @@ def parse_event(event: dict[str, Any]) -> ParsedEvent:
     chan_id = channel.get("id")
     chan_name = channel.get("name")
     
-    dialplan = channel.get("dialplan") or {}
-    app_data = dialplan.get("app_data")
+    app_name = event.get("application")
+    app_args = event.get("args")
 
-    app_name, app_args = _split_app_data(app_data)
+    if not app_args or not isinstance(app_args, list):
+        dialplan = channel.get("dialplan") or {}
+        app_data = dialplan.get("app_data")
+
+        parsed_name, parsed_args = _split_app_data(app_data)
+
+        if not app_name:
+            app_name = parsed_name
+        if not app_args:
+            app_args = parsed_args
 
     return ParsedEvent(
         etype=etype,
@@ -45,6 +54,6 @@ def parse_event(event: dict[str, Any]) -> ParsedEvent:
         channel_id=chan_id,
         channel_name=chan_name,
         app_name=app_name,
-        app_args=app_args,
+        app_args=app_args or [],
         raw=event,
     )

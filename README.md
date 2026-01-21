@@ -29,9 +29,12 @@
 
 ## ari-worker
 - /pbx-platform/services/ari-worker 이동후 run
-- run: python -m app.main 
+- run: ./run.sh 
 
 ## api (web)
 - /pbx-platform/services/api 이동후 run
+- run(dev): uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+- run(prod)
 - FastAPI
+
 
