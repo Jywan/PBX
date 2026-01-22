@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from pbx_common.models import User, Company
+from pbx_common.utils.security import hash_password
 from app.db.session import get_db
 from app.schemas.user import UserCreate, UserResponse
 
@@ -26,7 +27,7 @@ async def create_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 
     new_user = User(
         account=user_in.account,
-        account_pw=user_in.account_pw,
+        account_pw=hash_password(user_in.account_pw),
         exten=user_in.exten,
         name=user_in.name,
         role=user_in.role,
