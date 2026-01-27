@@ -16,3 +16,9 @@ asterisk/
 
 # Docker
 docker-compose.yml
+Dockerfile
+
+# Frontend 빌드 및 패키지
+node_modules/
+.next/
+dist/

@@ -35,9 +35,23 @@
 - /pbx-platform/services/api 이동후 run
 - run: ./run.sh 
 
-
 ## ari-worker + api 동시 run
 - /pbx-platform 
 - run: ./dev.sh
 
 
+## frontend
+- npm install axios @tanstack/react-query
+- npm install axios js-cookie
+- npm install --save-dev @types/js-cookie
+
+# DockerFile(해당 파일 위치에서 실행)
+- docker build --no-cache -t my-asterisk:24.04 .
+- docker run -d \
+  --name asterisk-server \
+  -p 2222:22 \
+  -p 5060:5060/udp \
+  -p 10000-10100:10000-10100/udp \
+  --restart always \
+  my-asterisk:24.04
+-  docker exec -it asterisk-server

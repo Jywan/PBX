@@ -1,12 +1,12 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from pbx_common.models import User, Company
-from pbx_common.utils.security import hash_password
+from pbx_common.utils.security import hash_password, verify_password, create_access_token
 from app.db.session import get_db
-from app.schemas.user import UserCreate, UserResponse
+from app.schemas.user import UserCreate, UserResponse, LoginRequest, Token
 
 router = APIRouter()
 
@@ -46,3 +46,22 @@ async def read_users(db: AsyncSession = Depends(get_db)):
     result = await db.execute(query)
 
     return result.scalars().all()
+
+# 3. 로그인 (jwt 토큰 발급)
+@router.post("/login", response_model=Token)
+async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
+    # 1. 계정 체크
+    result = await db.execute(select(User).where(User.account == login_data.account))
+    user = result.scalars().first()
+
+    # 2. 유저 존재 여부
+    if not user or not verify_password(login_data.account_pw, user.account_pw):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="존재하지 않는 계정입니다.",
+        )
+    
+    # 3. 토큰 발급
+    access_token = create_access_token(data={"sub": user.account})
+
+    return {"access_token": access_token, "token_type": "bearer"}

@@ -25,3 +25,11 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
     deactivated_at: Optional[datetime]
+
+class LoginRequest(BaseModel):
+    account: str
+    account_pw: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
