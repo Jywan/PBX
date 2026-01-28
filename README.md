@@ -55,3 +55,4 @@
   --restart always \
   my-asterisk:24.04
 -  docker exec -it asterisk-server
+

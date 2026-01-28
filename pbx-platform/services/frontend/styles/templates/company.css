@@ -1,0 +1,38 @@
+.company-container {
+    display: flex;
+    height: 100%;
+    gap: 16px;
+}
+
+.company-col {
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    border: 1px solid #e5e8eb;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+/* 업체관리 특화 비율: 업체목록(30%) | 기본정보(35%) | 부가설정(35%) */
+.company-col-list { flex: 0 0 320px; }
+.company-col-base { flex: 1; }
+.company-col-extra { flex: 0 0 380px; }
+
+.company-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #191f28;
+}
+
+.company-placeholder {
+    flex: 1;
+    border: 1px dashed #d1d6db;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8b95a1;
+    font-size: 12px;
+    text-align: center;
+}

@@ -62,6 +62,12 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
         )
     
     # 3. 토큰 발급
-    access_token = create_access_token(data={"sub": user.account})
+    access_token = create_access_token(
+        data={
+            "sub": user.account,
+            "name": user.name,
+            "role": user.role.value if hasattr(user.role, 'value') else str(user.role)
+        }
+    )
 
     return {"access_token": access_token, "token_type": "bearer"}

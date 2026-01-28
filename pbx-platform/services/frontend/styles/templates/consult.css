@@ -1,0 +1,52 @@
+/* 상담 메뉴 전용 레이아웃 */
+.consult-container {
+    display: flex;
+    height: 100%;
+    gap: 20px;
+}
+
+/* 3등분 컬럼 공통 스타일 */
+.consult-col {
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    border: 1px solid #e5e8eb;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+/* 1단: 좌측 목록 (고정폭) */
+.col-left-list {
+    flex: 0 0 260px;
+}
+
+/* 2단: 중앙 작업대 (확장형) */
+.col-center-work {
+    flex: 1;
+    background-color: #f9fafb; 
+}
+
+/* 3단: 우측 정보 (고정폭) */
+.col-right-info {
+    flex: 0 0 340px;
+}
+
+/* 섹션 제목 */
+.consult-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #191f28;
+}
+
+/* 뼈대용 박스 */
+.consult-box-placeholder {
+    flex: 1;
+    border: 1px dashed #d1d6db;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8b95a1;
+    font-size: 13px;
+}

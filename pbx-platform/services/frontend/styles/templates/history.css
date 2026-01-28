@@ -1,0 +1,52 @@
+/* 통화 이력 전용 레이아웃 (3등분) */
+.history-container {
+    display: flex;
+    height: 100%;
+    gap: 16px;
+}
+
+/* 3등분 컬럼 공통 스타일 */
+.history-col {
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    border: 1px solid #e5e8eb;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+/* 1단: 좌측 조회 필터 (고정폭) */
+.history-col-filter {
+    flex: 0 0 220px;
+}
+
+/* 2단: 중앙 통화 목록 (확장형) */
+.history-col-list {
+    flex: 1;
+}
+
+/* 3단: 우측 상세 상담 이력 (고정폭) */
+.history-col-detail {
+    flex: 0 0 380px;
+}
+
+/* 섹션 타이틀 */
+.history-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #191f28;
+}
+
+/* 뼈대용 플레이스홀더 */
+.history-placeholder {
+    flex: 1;
+    border: 1px dashed #d1d6db;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8b95a1;
+    font-size: 13px;
+    text-align: center;
+}
