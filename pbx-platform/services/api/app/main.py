@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routes import calls, users, companies
+from app.routes import calls, users, companies, signaling
 
 # 설정 로드
 settings = get_settings()
@@ -26,16 +26,16 @@ def create_application() -> FastAPI:
         allow_headers=["*"],    # 모든 헤더 허용
     )
 
-    # 라우터 추가 공간
+    # API 라우터
     application.include_router(calls.router, prefix="/api/v1", tags=["calls"])
     application.include_router(users.router, prefix="/api/v1", tags=["users"])
     application.include_router(companies.router, prefix="/api/v1", tags=["companies"])
+
+    # WebSocket 라우터
+    application.include_router(signaling.router, tags=["signaling"])
+
 
     return application
 
 app = create_application()
 
-# 헬스 체크
-@app.get("/")
-async def root():
-    return {"message": "PBX API Server is Running"}

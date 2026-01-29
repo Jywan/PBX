@@ -19,6 +19,7 @@ import SettingsTemplate from "@/components/templates/SettingsTemplate";
 
 // CSS
 import "@/styles/dashboard.css";
+import "@/styles/webrtc.css";
 
 export default function HomePage() {
   const router = useRouter();
