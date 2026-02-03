@@ -70,6 +70,7 @@ Index("idx_call_events_channel_id", CallEvent.channel_id)
 class UserRole(enum.Enum):
     S = "SYSTEM_ADMIN"
     A = "AGENT"
+    M = "MANAGER"
 
 # 사용자 테이블
 class User(Base):
@@ -112,3 +113,45 @@ class Company(Base):
 
 Index("idx_company_name", Company.company_name)
 Index("idx_company_is_active", Company.is_active)
+
+class LoginStatus(enum.Enum):
+    LOGIN = "LOGIN"
+    LOGOUT = "LOGOUT"
+
+class UserActivity(enum.Enum):
+    READY = "READY"
+    POST_PROCESSING = "POST_PROCESSING"
+    CALLING = "CALLING"
+    ON_CALL = "ON_CALL"
+    AWAY = "AWAY"
+    TRAINING = "TRAINING"
+    DISABLED = "DISABLED"
+
+class UserStatus(Base):
+    __tablename__ = "user_status"
+
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), primary_key=True)
+    login_status: Mapped[LoginStatus] = mapped_column(
+        Enum(LoginStatus, native_enum=False),
+        nullable=False,
+        server_default="LOGOUT"
+    )
+    activity: Mapped[UserActivity] = mapped_column(
+        Enum(UserActivity, native_enum=False),
+        nullable=False,
+        server_default="DISABLED"   # 초기상태 혹은 로그아웃시 기본값으로 비활성화 설정
+    )
+    current_room_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    user: Mapped["User"] = relationship("User")
+
+class UserStatusLog(Base):
+    __tablename__ = "user_status_log"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), nullable=False)
+    login_status: Mapped[LoginStatus] = mapped_column(Enum(LoginStatus, native_enum=False), nullable=False)
+    activity: Mapped[UserActivity] = mapped_column(Enum(UserActivity, native_enum=False), nullable=False)
+
+    started_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    ended_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    duration: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

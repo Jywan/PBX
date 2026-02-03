@@ -1,0 +1,93 @@
+.dropdownContainer {
+    position: relative;
+    user-select: none;
+    min-width: 140px;
+}
+
+.selectedWrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.selectedWrapper:hover {
+    border-color: #bbb;
+    background-color: #f9f9f9;
+}
+
+.selectedLabel {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    flex: 1;
+}
+
+.arrow {
+    font-size: 10px;
+    color: #999;
+    transition: transform 0.2s ease;
+}
+
+.arrow.open {
+    transform: rotate(180deg);
+}
+
+/* 드롭다운 목록창 */
+.dropdownList {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    margin: 0;
+    padding: 5px 0;
+    list-style: none;
+    overflow: hidden;
+}
+
+/* 개별 항목 */
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #444;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.dropdownItem:hover {
+    background-color: #f5f5f5;
+}
+
+.dropdownItem.active {
+    background-color: #f0f7ff;
+    color: #007bff;
+    font-weight: 600;
+}
+
+/* 점 스타일 (기존 색상 유지) */
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.READY { background-color: #22c55e; box-shadow: 0 0 8px rgba(34, 197, 94, 0.4); }
+.CALLING { background-color: #0ea5e9; box-shadow: 0 0 8px rgba(14, 165, 233, 0.4); }
+.ON_CALL { background-color: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+.POST_PROCESSING { background-color: #3b82f6; }
+.AWAY { background-color: #f59e0b; }
+.TRAINING { background-color: #a855f7; }
+.DISABLED { background-color: #94a3b8; }

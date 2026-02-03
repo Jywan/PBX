@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 
 export const useWebRTC = (roomId: string = "test_room") => {
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -10,8 +10,8 @@ export const useWebRTC = (roomId: string = "test_room") => {
 
     const ws = useRef<WebSocket | null>(null);
     const pc = useRef<RTCPeerConnection | null>(null);
-    
-    // [개선] React State 업데이트 지연을 방지하기 위한 실시간 스트림 참조 Ref
+
+    // React State 업데이트 지연을 방지하기 위한 실시간 스트림 참조 Ref
     const localStreamRef = useRef<MediaStream | null>(null);
 
     const sendSignalMessage = useCallback((message: any) => {
@@ -136,7 +136,7 @@ export const useWebRTC = (roomId: string = "test_room") => {
         isVideoEnabled, 
         startLocalStream, 
         stopLocalStream, 
-        toggleAudio, // 다시 추가됨
-        call 
+        toggleAudio,
+        call
     };
 };

@@ -1,9 +1,10 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
+from datetime import datetime
 
-from pbx_common.models import User, Company
+from pbx_common.models import User, Company, UserStatus, UserStatusLog, LoginStatus, UserActivity
 from pbx_common.utils.security import hash_password, verify_password, create_access_token
 from app.db.session import get_db
 from app.schemas.user import UserCreate, UserResponse, LoginRequest, Token
@@ -33,8 +34,22 @@ async def create_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
         role=user_in.role,
         company_id=user_in.company_id 
     )
-
     db.add(new_user)
+
+    await db.flush()
+
+    now = datetime.now()
+    db.add(UserStatus(user_id=new_user.id))
+
+    db.add(UserStatusLog(
+        user_id=new_user.id,
+        login_status=LoginStatus.LOGOUT,
+        activity=UserActivity.DISABLED,
+        started_at=now,
+        ended_at=now,
+        duration=0
+    ))
+
     await db.commit()
     await db.refresh(new_user)
     return new_user
@@ -60,14 +75,52 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="존재하지 않는 계정입니다.",
         )
-    
-    # 3. 토큰 발급
+
+    # 3. 기존 로그 마감 처리 (혹시 종료되지 않은 로그가 있는 경우에만..)
+    # ended_at이 null인 가장 최근 로그를 찾아 마감
+    now = datetime.now()
+
+    last_log_query = await db.execute(
+        select(UserStatusLog)
+        .where(UserStatusLog.user_id == user.id, UserStatusLog.ended_at == None)
+    )
+    unclosed_log = last_log_query.scalar_one_or_none()
+    if unclosed_log:
+        unclosed_log.ended_at = now
+        diff = now - unclosed_log.started_at
+        unclosed_log.duration = int(diff.total_seconds)
+
+    # 4. UserStatus 업데이트 
+    # 로그인 시점에는 LOGIN / READY 상태를 기본으로 설정
+    # 추후 자동 후처리 옵션을 User 테이블에 추가한다면 로직 수정 필요
+    await db.execute(
+        update(UserStatus)
+        .where(UserStatus.user_id == user.id)
+        .values(
+            login_status=LoginStatus.LOGIN,
+            activity=UserActivity.READY
+        )
+    )
+
+    # 5. 새로운 로그인 활동 로그 생성
+    new_log = UserStatusLog(
+        user_id=user.id,
+        login_status=LoginStatus.LOGIN,
+        activity=UserActivity.READY,
+        started_at=now
+    )
+    db.add(new_log)
+
+    # 6. 토큰 발급
     access_token = create_access_token(
         data={
             "sub": user.account,
             "name": user.name,
-            "role": user.role.value if hasattr(user.role, 'value') else str(user.role)
+            "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
+            "id": user.id
         }
     )
+
+    await db.commit()
 
     return {"access_token": access_token, "token_type": "bearer"}
