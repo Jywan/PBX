@@ -1,0 +1,66 @@
+/* 공통 토스트 스타일 */
+.toast-container {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.toast {
+    min-width: 320px;
+    padding: 14px 24px;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    animation: toastIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    border: 1px solid #e5e7eb;
+    pointer-events: auto;
+}
+
+/* 들어오는 애니메이션 */
+@keyframes toastIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* 타입별 포인트 컬러 */
+.toast.success { border-left: 5px solid #10b981; color: #065f46; }
+.toast.error { border-left: 5px solid #ef4444; color: #991b1b; }
+
+.toast-icon { font-size: 18px; }
+
+.toast-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.toast-icon {
+    width: 20px;
+    height: 20px;
+}
+
+/* 타입별 아이콘 색상 강제 지정 */
+.toast.success .toast-icon { color: #10b981; }
+.toast.error .toast-icon { color: #ef4444; }
+
+@keyframes toastOut {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(-30px); opacity: 0; }
+}
+
+/* 나가는 상태일 때 적용될 클래스 */
+.toast.exit {
+    animation: toastOut 0.4s cubic-bezier(0.18, 0.89, 0.32, 1) forwards;
+}

@@ -6,25 +6,32 @@ export default function Sidebar({ activeMenu, setActiveMenu }: {
     activeMenu: string, 
     setActiveMenu: (menu: string) => void 
 }) {
-    // 소메뉴 열림 상태 관리
-    const [isCompanyOpen, setIsCompanyOpen] = useState(false);
-    const [isSettingOpen, setIsSettingOpen] = useState(false);
+    // 💡 수정 1: 여러 개의 boolean 대신 하나의 문자열 상태로 관리 (null = 모두 닫힘)
+    const [openPopup, setOpenPopup] = useState<string | null>(null);
 
+    // 💡 메인 메뉴 클릭 시 모든 팝업 닫기
     const handleMainMenuClick = (menu: string) => {
         setActiveMenu(menu);
-        setIsCompanyOpen(false);
-        setIsSettingOpen(false);
+        setOpenPopup(null);
     };
 
+    // 💡 서브 메뉴 클릭 시 팝업 닫고 메뉴 활성화
     const handleSubMenuClick = (menu: string) => {
         setActiveMenu(menu);
-        setIsCompanyOpen(false);
-        setIsSettingOpen(false);
+        setOpenPopup(null);
+    };
+
+    // 💡 팝업 토글 로직: 이미 열려있는 걸 누르면 닫고, 아니면 해당 팝업을 염
+    const togglePopup = (popupName: string) => {
+        if (openPopup === popupName) {
+            setOpenPopup(null);
+        } else {
+            setOpenPopup(popupName);
+        }
     };
 
     return (
         <aside className="layout-sidebar">
-            {/* handleMainMenuClick을 사용하여 클릭 시 상태 초기화 */}
             <button className={`menu-btn ${activeMenu === "consult" ? "active" : ""}`} 
                     onClick={() => handleMainMenuClick("consult")}>상담</button>
             <button className={`menu-btn ${activeMenu === "history" ? "active" : ""}`} 
@@ -32,15 +39,18 @@ export default function Sidebar({ activeMenu, setActiveMenu }: {
             <button className={`menu-btn ${activeMenu === "customer" ? "active" : ""}`} 
                     onClick={() => handleMainMenuClick("customer")}>고객관리</button>
 
+            {/* 업체관리 그룹 */}
             <div className="menu-group">
                 <button 
-                    className={`menu-btn ${isCompanyOpen || activeMenu.startsWith("company-") ? "active" : ""}`} 
-                    onClick={() => setIsCompanyOpen(!isCompanyOpen)}
+                    // 💡 수정 2: openPopup 상태와 비교하여 활성 클래스 적용
+                    className={`menu-btn ${openPopup === "company" || activeMenu.startsWith("company-") ? "active" : ""}`} 
+                    onClick={() => togglePopup("company")}
                 >
                     업체관리
                 </button>
                 
-                {isCompanyOpen && (
+                {/* 💡 수정 3: openPopup 값이 'company'일 때만 렌더링 */}
+                {openPopup === "company" && (
                     <div className="sub-menu-list">
                         <button className="sub-menu-btn" onClick={() => handleSubMenuClick("company-info")}>업체정보</button>
                         <button className="sub-menu-btn" onClick={() => handleSubMenuClick("company-agent")}>상담원관리</button>
@@ -50,23 +60,21 @@ export default function Sidebar({ activeMenu, setActiveMenu }: {
                 )}
             </div>
             
-
+            {/* 시스템 설정 그룹 */}
             <div className="menu-group">
                 <button
-                    className={`menu-btn ${isSettingOpen || activeMenu.startsWith("setting-") ? "active" : ""}`}
-                    onClick={() => setIsSettingOpen(!isSettingOpen)}
+                    className={`menu-btn ${openPopup === "setting" || activeMenu.startsWith("setting-") ? "active" : ""}`}
+                    onClick={() => togglePopup("setting")}
                 >
                     시스템 설정
                 </button>
 
-                {isSettingOpen && (
+                {openPopup === "setting" && (
                     <div className="sub-menu-list">
                         <button className="sub-menu-btn" onClick={() => handleSubMenuClick("setting-perm-template")}>권한 템플릿설정</button>
                     </div>
                 )}
             </div>
-            {/* <button className={`menu-btn ${activeMenu === "settings" ? "active" : ""}`} 
-                    onClick={() => handleMainMenuClick("settings")}>시스템 설정</button> */}
         </aside>
     );
 }

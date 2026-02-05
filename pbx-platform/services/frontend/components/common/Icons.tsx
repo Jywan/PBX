@@ -6,7 +6,7 @@ interface IconProps {
   className?: string;
 }
 
-// 활성 상태 아이콘 (체크)
+// 활성 상태 아이콘
 export const ActiveIcon = ({ className = "" }: IconProps) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -22,7 +22,7 @@ export const ActiveIcon = ({ className = "" }: IconProps) => (
     </svg>
 );
 
-// 비활성 상태 아이콘 (X)
+// 비활성 상태 아이콘
 export const InactiveIcon = ({ className = "" }: IconProps) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -35,5 +35,19 @@ export const InactiveIcon = ({ className = "" }: IconProps) => (
         d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 10-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 101.06 1.06L12 13.06l1.72 1.72a.75.75 0 101.06-1.06L13.06 12l1.72-1.72a.75.75 0 10-1.06-1.06L12 10.94l-1.72-1.72z"
         clipRule="evenodd"
         />
+    </svg>
+);
+
+// 토스트용 아이콘 (O)
+export const SuccessIcon = ({ className }: { className?: string }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+    </svg>
+);
+
+// 토스트용 아이콘 (X)
+export const ErrorIcon = ({ className }: { className?: string }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
     </svg>
 );
