@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List, Dict
 
-router = APIRouter()
+router = APIRouter(tags=["signaling"])
 
 class SignalingManager:
     def __init__(self):

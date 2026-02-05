@@ -90,6 +90,7 @@ class User(Base):
     deactivated_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
     company: Mapped["Company"] = relationship("Company", back_populates="users")
+    permissions: Mapped[list["Permission"]] = relationship("Permission", secondary="user_permissions", back_populates="users", lazy="selectin")
 
 Index("idx_user_account", User.account)
 Index("idx_user_exten", User.exten)
@@ -110,7 +111,7 @@ class Company(Base):
                                                 onupdate=func.now())
 
     users: Mapped[list["User"]] = relationship("User", back_populates="company")
-
+    
 Index("idx_company_name", Company.company_name)
 Index("idx_company_is_active", Company.is_active)
 
@@ -142,6 +143,8 @@ class UserStatus(Base):
         server_default="DISABLED"   # 초기상태 혹은 로그아웃시 기본값으로 비활성화 설정
     )
     current_room_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     user: Mapped["User"] = relationship("User")
 
 class UserStatusLog(Base):
@@ -155,3 +158,34 @@ class UserStatusLog(Base):
     started_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     ended_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     duration: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+class PermissionType(enum.Enum):
+    MENU = "MENU"
+    ACTION = "ACTION"
+
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    parent_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("permissions.id", ondelete="CASCADE"), nullable=True)
+
+    code: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    type: Mapped[PermissionType] = mapped_column(Enum(PermissionType, native_enum=False), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    # 계층 관계 설정
+    parent: Mapped[Optional["Permission"]] = relationship("Permission", remote_side=[id], back_populates="children")
+    children: Mapped[list["Permission"]] = relationship("Permission", back_populates="parent", cascade="all, delete-orphan")
+
+    # 유저 관계
+    users: Mapped[list["User"]] = relationship("User", secondary="user_permissions", back_populates="permissions")
+
+class UserPermission(Base):
+    __tablename__ = "user_permissions"
+
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id", onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
+    permission_id: Mapped[int] = mapped_column(Integer, ForeignKey("permissions.id", onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
+
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    create_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())

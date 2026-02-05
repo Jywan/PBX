@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pbx_common.models import UserRole
 
 # 생성시 필요한 데이터
@@ -33,3 +33,4 @@ class LoginRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    permissions: List[str] = []

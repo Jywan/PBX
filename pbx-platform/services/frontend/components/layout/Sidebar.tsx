@@ -8,15 +8,18 @@ export default function Sidebar({ activeMenu, setActiveMenu }: {
 }) {
     // 소메뉴 열림 상태 관리
     const [isCompanyOpen, setIsCompanyOpen] = useState(false);
+    const [isSettingOpen, setIsSettingOpen] = useState(false);
 
     const handleMainMenuClick = (menu: string) => {
         setActiveMenu(menu);
         setIsCompanyOpen(false);
+        setIsSettingOpen(false);
     };
 
     const handleSubMenuClick = (menu: string) => {
         setActiveMenu(menu);
         setIsCompanyOpen(false);
+        setIsSettingOpen(false);
     };
 
     return (
@@ -46,9 +49,24 @@ export default function Sidebar({ activeMenu, setActiveMenu }: {
                     </div>
                 )}
             </div>
+            
 
-            <button className={`menu-btn ${activeMenu === "settings" ? "active" : ""}`} 
-                    onClick={() => handleMainMenuClick("settings")}>설정</button>
+            <div className="menu-group">
+                <button
+                    className={`menu-btn ${isSettingOpen || activeMenu.startsWith("setting-") ? "active" : ""}`}
+                    onClick={() => setIsSettingOpen(!isSettingOpen)}
+                >
+                    시스템 설정
+                </button>
+
+                {isSettingOpen && (
+                    <div className="sub-menu-list">
+                        <button className="sub-menu-btn" onClick={() => handleSubMenuClick("setting-perm-template")}>권한 템플릿설정</button>
+                    </div>
+                )}
+            </div>
+            {/* <button className={`menu-btn ${activeMenu === "settings" ? "active" : ""}`} 
+                    onClick={() => handleMainMenuClick("settings")}>시스템 설정</button> */}
         </aside>
     );
 }

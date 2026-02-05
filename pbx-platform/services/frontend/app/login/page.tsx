@@ -4,6 +4,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
 import '@/styles/login.css';
 
 export default function LoginPage() {
@@ -11,6 +12,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const router = useRouter();
+    const setPermissions = useAuthStore((state) => state.setPermissions);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -26,9 +28,14 @@ export default function LoginPage() {
             });
 
             // 토큰 추출
-            const { access_token } = response.data;
+            const { access_token, permissions } = response.data;
 
             Cookies.set('access_token', access_token, { expires: 10/24 });
+
+            if (permissions) {
+                setPermissions(permissions);
+            }
+
             console.log("로그인 성공!");
             
             router.push('/'); 

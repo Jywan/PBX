@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routes import calls, users, companies, signaling
+from app.routes import calls, users, companies, signaling, permissions
 
 # 설정 로드
 settings = get_settings()
@@ -27,12 +27,13 @@ def create_application() -> FastAPI:
     )
 
     # API 라우터
-    application.include_router(calls.router, prefix="/api/v1", tags=["calls"])
-    application.include_router(users.router, prefix="/api/v1", tags=["users"])
-    application.include_router(companies.router, prefix="/api/v1", tags=["companies"])
+    application.include_router(calls.router)
+    application.include_router(users.router)
+    application.include_router(companies.router)
+    application.include_router(permissions.router)
 
     # WebSocket 라우터
-    application.include_router(signaling.router, tags=["signaling"])
+    application.include_router(signaling.router)
 
 
     return application

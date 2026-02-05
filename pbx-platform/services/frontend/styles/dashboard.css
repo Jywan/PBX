@@ -54,6 +54,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    word-break: keep-all;
     background: none;
     border: none;
     cursor: pointer;

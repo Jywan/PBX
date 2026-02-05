@@ -8,7 +8,7 @@ from pbx_common.utils.crypto import encrypt_data, decrypt_data
 from app.db.session import get_db
 from app.schemas.company import CompanyCreate, CompanyResponse
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1", tags=["Companies"], responses={404: {"description": "Not found"}})
 
 @router.post("/companies", response_model=CompanyResponse)
 async def create_company(company_in: CompanyCreate, db: AsyncSession = Depends(get_db)):
