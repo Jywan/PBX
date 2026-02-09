@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/v1", tags=["Companies"], responses={404: {"descr
 async def create_company(company_in: CompanyCreate, db: AsyncSession = Depends(get_db)):
 
     # 대표자 번호가 있으면 암호화
-    encrypted_phone = encrypt_data(company_in.ceo_phone) if company_in.ceo_phone else None
+    encrypted_phone = encrypt_data(company_in.representative) if company_in.representative else None
 
     new_company = Company(
         company_name=company_in.company_name,
@@ -36,4 +36,11 @@ async def create_company(company_in: CompanyCreate, db: AsyncSession = Depends(g
 async def read_companies(db: AsyncSession = Depends(get_db)):
     query = select(Company).order_by(Company.id.desc())
     result = await db.execute(query)
-    return result.scalars().all()
+    companies = result.scalars().all() # 1. 리스트 가져오기
+
+    # 2. 리스트를 순회하며 전화번호 복호화
+    for company in companies:
+        if company.ceo_phone:
+            company.ceo_phone = decrypt_data(company.ceo_phone)
+
+    return companies

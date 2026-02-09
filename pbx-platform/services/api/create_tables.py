@@ -7,7 +7,7 @@ load_dotenv("../../.env")
 
 # 2. 필요한 모듈 임포트
 from pbx_common.db import Database, DatabaseConfig
-from pbx_common.models import Base, User, Call, Company  
+from pbx_common.models import __all__ 
 
 async def create_tables():
     # 3. DB 설정 및 초기화
