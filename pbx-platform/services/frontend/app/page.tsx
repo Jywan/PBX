@@ -53,7 +53,7 @@ export default function HomePage() {
     
     try {
       // 1. 서버 호출 
-      const response = await fetch(`${API_URL}/api/v1/logout`, {
+      const response = await fetch(`${API_URL}/api/v1/auth/logout`, {
         method: "POST",
         headers: { 
             "Authorization": `Bearer ${token}`,

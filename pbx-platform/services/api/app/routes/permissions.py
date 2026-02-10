@@ -8,8 +8,9 @@ from sqlalchemy import func
 from app.db.session import get_db
 from app.schemas.permissions import MenuTemplateCreate, PermissionUpdate, UserPermissionAssign
 from pbx_common.models import Permission, PermissionType, UserPermission
+from app.deps import get_current_user
 
-router = APIRouter(prefix="/api/v1/permissions", tags=["Permissions"], responses={404: {"description": "Not found"}})
+router = APIRouter(prefix="/api/v1/permissions", tags=["Permissions"], dependencies=[Depends(get_current_user)])
 
 @router.post("/template")
 async def create_permission_template(data: MenuTemplateCreate, db: AsyncSession = Depends(get_db)):

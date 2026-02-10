@@ -22,7 +22,7 @@ export default function LoginPage() {
 
         try {
             
-            const response = await axios.post(`${API_URL}/api/v1/login`, {
+            const response = await axios.post(`${API_URL}/api/v1/auth/login`, {
                 account: account,
                 account_pw: password
             });

@@ -6,8 +6,9 @@ from sqlalchemy import select
 from pbx_common.models import Call
 from app.db.session import get_db
 from app.schemas.call import CallResponse
+from app.deps import get_current_user
 
-router = APIRouter(prefix="/api/v1", tags=["Calls"], responses={404: {"description": "Not found"}})
+router = APIRouter(prefix="/api/v1", tags=["Calls"], dependencies=[Depends(get_current_user)])
 
 @router.get("/calls", response_model=List[CallResponse])
 async def read_calls(

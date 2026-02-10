@@ -64,4 +64,13 @@ def create_access_token(data: dict, expire_delta: Optional[timedelta] = None):
     encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encode_jwt
 
-
+def decode_access_token(token: str):
+    """
+    토큰을 받아서 해석(Decode)하여 payload를 반환합니다.
+    만료되었거나 위조된 경우 에러를 발생시킵니다.
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None
