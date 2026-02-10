@@ -21,25 +21,16 @@ export default function LoginPage() {
         setError('');
 
         try {
-            
             const response = await axios.post(`${API_URL}/api/v1/auth/login`, {
                 account: account,
                 account_pw: password
             });
-
-            // 토큰 추출
             const { access_token, permissions } = response.data;
-
             Cookies.set('access_token', access_token, { expires: 10/24 });
-
             if (permissions) {
                 setPermissions(permissions);
             }
-
-            console.log("로그인 성공!");
-            
             router.push('/'); 
-
         } catch (err: any) {
             console.error("로그인 에러:", err);
             setError(err.response?.data?.detail || "로그인 중 오류가 발생했습니다.");

@@ -1,21 +1,35 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation"; 
 import axios from "axios";
 import "@/styles/templates/permissionTemplate.css";
 import "@/styles/common/toast.css";
 import { ActiveIcon, InactiveIcon, SuccessIcon, ErrorIcon } from "@/components/common/Icons";
 
+import ConfirmModal from "../common/ConfirmModal";
+import { useConfirmModal } from "@/hooks/useConfirmModal";
+
 export default function PermissionTemplate() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const router = useRouter();
+
+    // --- Auth State ---
+    const [token, setToken] = useState<string | null>(null);
+
+    // --- UI State ---
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(false);
+    
+    // --- Form State ---
     const [menuName, setMenuName] = useState("");
     const [menuCode, setMenuCode] = useState("");
-    
     const [actions, setActions] = useState([{ id: null, name: "", code: "", is_active: true }]);
     const [isEditMode, setIsEditMode] = useState(false);
+
+    // --- Custome Modal
+    const { isOpen, message, onConfirm, openConfirm, closeConfirm } = useConfirmModal();
 
     const [toast, setToast] = useState<{ 
         message: string; 
@@ -23,66 +37,100 @@ export default function PermissionTemplate() {
         isExiting: boolean 
     }>({ message: "", type: null, isExiting: false });
 
-    // 부드러운 토스트 트리거 제거 로직
+    // --- Helpers ---
     const showToast = (message: string, type: 'success' | 'error') => {
-        // 1. 토스트 초기화 및 등장
         setToast({ message, type, isExiting: false });
-
-        // 2. 2.6초 후 '나가는 애니메이션' 클래스 적용 (.exit)
-        setTimeout(() => {
-            setToast(prev => ({ ...prev, isExiting: true }));
-        }, 2600);
-
-        // 3. 3초 후 데이터 완전히 제거
-        setTimeout(() => {
-            setToast({ message: "", type: null, isExiting: false });
-        }, 3000);
+        setTimeout(() => setToast(prev => ({ ...prev, isExiting: true })), 2600);
+        setTimeout(() => setToast({ message: "", type: null, isExiting: false }), 3000);
     };
+
+    const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+        return null;
+    };
+
+    // --- Effects ---
+    useEffect(() => {
+        const cookieToken = getCookie("access_token");
+        if (!cookieToken) {
+            router.push("/login");
+            return;
+        }
+        setToken(cookieToken);
+    }, [router]);
+
+    useEffect(() => {
+        if (token) {
+            fetchTemplates();
+        }
+    }, [token]);
+
+    // --- API Handlers ---
 
     const fetchTemplates = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${API_URL}/api/v1/permissions/templates`);
+            const response = await axios.get(`${API_URL}/api/v1/permissions/templates`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             setTemplates(response.data);
-        } catch (error) { console.error("Fetch Error:", error); } 
-        finally { setLoading(false); }
+        } catch (error: any) { 
+            console.error("Fetch Error:", error); 
+            if (error.response?.status === 401) {
+                router.push("/login");
+            }
+        } finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchTemplates(); }, []);
+    // 1. 메뉴 재활성화
+    const handleReactivateClick = (id: number, name: string) => {
+        openConfirm(
+            `'${name}' 메뉴를 다시 활성화 하시겠습니까?`,
+            () => executeReactivate(id)
+        );
+    };
 
-    const handleReactivate = async (id: number, name: string) => {
-        if (!window.confirm(`'${name}' 메뉴를 다시 활성화하시겠습니까?`)) return;
+    const executeReactivate = async (id: number) => {
+        if (!token) return;
         try {
-            await axios.patch(`${API_URL}/api/v1/permissions/template/${id}`, { is_active: true });
-            showToast("정상적으로 활성화되었습니다.", "success");
+            await axios.patch(`${API_URL}/api/v1/permissions/template/${id}`,
+                { is_active: true },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            showToast("정상적으로 활성화 되었습니다.", "success");
+            fetchTemplates();
+        } catch (err: any) {
+            showToast("활성화 작업에 실패했습니다.", "error");
+        }
+    };
+    
+    // 2. 메뉴 비활성화
+    const handleDeleteClick = (id: number, name: string) => {
+        openConfirm(
+            `'${name}' 메뉴를 비활성화하시겠습니까?`,
+            () => executeDelete(id)
+        );
+    };
+
+    const executeDelete = async (id: number) => {
+        if (!token) return;
+        try {
+            await axios.delete(`${API_URL}/api/v1/permissions/template/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            showToast("비활성화 처리가 완료되었습니다.", "success");
             fetchTemplates();
         } catch (error: any) { 
-            showToast("활성화 작업에 실패했습니다.", "error"); 
+            showToast("처리에 실패했습니다.", "error"); 
         }
     };
 
-    const openDrawer = (data: any = null) => {
-        if (data) {
-            setMenuName(data.name); 
-            setMenuCode(data.code);
-            setActions(data.children && data.children.length > 0 
-                ? data.children.map((c: any) => ({ 
-                    id: c.id, 
-                    name: c.name, 
-                    code: c.code, 
-                    is_active: c.is_active ?? true 
-                }))
-                : [{ id: null, name: "", code: "", is_active: true }]);
-            setIsEditMode(true);
-        } else {
-            setMenuName(""); setMenuCode(""); 
-            setActions([{ id: null, name: "", code: "", is_active: true }]);
-            setIsEditMode(false);
-        }
-        setIsDrawerOpen(true);
-    };
-
+    // 3. 저장 로직
     const handleSave = async () => {
+        if (!token) return;
+
         try {
             const payload = {
                 menu_name: menuName,
@@ -96,7 +144,11 @@ export default function PermissionTemplate() {
                         is_active: a.is_active
                     }))
             };
-            await axios.post(`${API_URL}/api/v1/permissions/template`, payload);
+
+            await axios.post(`${API_URL}/api/v1/permissions/template`, payload, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
             showToast("DB에 성공적으로 반영되었습니다.", "success"); 
             setIsDrawerOpen(false); 
             fetchTemplates();
@@ -105,15 +157,27 @@ export default function PermissionTemplate() {
         }
     };
 
-    const handleDelete = async (id: number, name: string) => {
-        if (!window.confirm(`비활성화하시겠습니까?`)) return;
-        try {
-            await axios.delete(`${API_URL}/api/v1/permissions/template/${id}`);
-            showToast("비활성화 처리가 완료되었습니다.", "success");
-            fetchTemplates();
-        } catch (error: any) { 
-            showToast("처리에 실패했습니다.", "error"); 
+    // --- UI Handlers ---
+    const openDrawer = (data: any = null) => {
+        if (data) {
+            setMenuName(data.name); 
+            setMenuCode(data.code);
+            // 자식 액션들의 상태(is_active)를 그대로 가져옴
+            setActions(data.children && data.children.length > 0 
+                ? data.children.map((c: any) => ({ 
+                    id: c.id, 
+                    name: c.name, 
+                    code: c.code, 
+                    is_active: c.is_active ?? true // DB값 우선, 없으면 true
+                }))
+                : [{ id: null, name: "", code: "", is_active: true }]);
+            setIsEditMode(true);
+        } else {
+            setMenuName(""); setMenuCode(""); 
+            setActions([{ id: null, name: "", code: "", is_active: true }]);
+            setIsEditMode(false);
         }
+        setIsDrawerOpen(true);
     };
 
     const addAction = () => setActions([...actions, { id: null, name: "", code: "", is_active: true }]);
@@ -142,6 +206,13 @@ export default function PermissionTemplate() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal 
+                isOpen={isOpen}
+                message={message}
+                onConfirm={onConfirm}
+                onClose={closeConfirm}
+            />
 
             <header className="perm-header">
                 <div className="perm-title-group">
@@ -176,9 +247,9 @@ export default function PermissionTemplate() {
                                 <td style={{ textAlign: 'center' }}>
                                     <button className="btn-edit" onClick={() => openDrawer(tpl)}>수정</button>
                                     {tpl.is_active ? (
-                                        <button className="btn-delete" onClick={() => handleDelete(tpl.id, tpl.name)}>비활성</button>
+                                        <button className="btn-delete" onClick={() => handleDeleteClick(tpl.id, tpl.name)}>비활성</button>
                                     ) : (
-                                        <button className="btn-reactivate" onClick={() => handleReactivate(tpl.id, tpl.name)}>재활성</button>
+                                        <button className="btn-reactivate" onClick={() => handleReactivateClick(tpl.id, tpl.name)}>재활성</button>
                                     )}
                                 </td>
                             </tr>
