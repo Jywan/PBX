@@ -2,26 +2,29 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation"; 
-import axios from "axios";
+import Cookies from "js-cookie";
 import "@/styles/templates/company.css";
 import "@/styles/common/toast.css";
 import { SuccessIcon, ErrorIcon } from "@/components/common/Icons";
+import type { Company, CompanyFormState } from "@/types/company";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/useToast";
+import { fetchCompanies as apiFetchCompanies, createCompany, updateCompany, deactivateCompany } from "@/lib/api/companies";
+import { formatPhoneNumber, validatePhoneNumber } from "@/lib/utils/validation";
 
 export default function CompanyTemplate() {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     const router = useRouter();
 
-    // --- Auth State ---
-    const [token, setToken] = useState<string | null>(null);
-    const [isSystemAdmin, setIsSystemAdmin] = useState(false);
+    const { token, isSystemAdmin, isLoading } = useAuth();
+    const { toast, showToast } = useToast();
 
     // --- Data State ---
-    const [companies, setCompanies] = useState<any[]>([]);
+    const [companies, setCompanies] = useState<Company[]>([]);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Form State
-    const [form, setForm] = useState({
+    // --- Form State ---
+    const [form, setForm] = useState<CompanyFormState>({
         id: null,
         name: "",
         representative: "",
@@ -30,70 +33,21 @@ export default function CompanyTemplate() {
         active: true
     });
 
-    // Toast State
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | null; isExiting: boolean }>({ message: "", type: null, isExiting: false });
-
-    const showToast = (message: string, type: 'success' | 'error') => {
-        setToast({ message, type, isExiting: false });
-        setTimeout(() => setToast(prev => ({ ...prev, isExiting: true })), 2600);
-        setTimeout(() => setToast({ message: "", type: null, isExiting: false }), 3000);
-    };
-
-    // 쿠키 유틸리티 함수
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-        return null;
-    };
-
-    // --- 1. 초기화 (토큰 체크 & 권한 확인) ---
-    useEffect(() => {
-        const cookieToken = getCookie("access_token");
-
-        // 토큰이 없으면 로그인 페이지로 이동
-        if (!cookieToken) {
-            router.push("/login");
-            return;
-        }
-
-        setToken(cookieToken);
-
-        // 토큰 파싱 (Role 확인)
-        try {
-            const payloadBase64 = cookieToken.split('.')[1];
-            // 한글 및 특수문자 깨짐 방지 디코딩
-            const decodedString = decodeURIComponent(escape(window.atob(payloadBase64)));
-            const decodedPayload = JSON.parse(decodedString);
-            
-            // 권한 체크 (문자열 "SYSTEM_ADMIN" 또는 숫자 0/문자 "0" 모두 허용)
-            const role = decodedPayload.role;
-            if (role === "SYSTEM_ADMIN" || role === 0 || role === "0") {
-                setIsSystemAdmin(true);
-            } 
-        } catch (e) {
-            console.error("Token parsing error:", e);
-            // 파싱 실패 시 보안을 위해 로그인 페이지로 보낼 수도 있음
-            // router.push("/login");
-        }
-    }, [router]);
-
-    // --- 2. 데이터 로딩 ---
+    // --- 데이터 로딩 ---
     useEffect(() => {
         if (!token) return;
         fetchCompanies();
     }, [token]);
 
     const fetchCompanies = async () => {
+        if (!token) return;
         setLoading(true);
         try {
-            const res = await axios.get(`${API_URL}/api/v1/companies`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setCompanies(res.data);
-            
-            if (res.data.length > 0 && !selectedId) {
-                handleSelectCompany(res.data[0]);
+            const data = await apiFetchCompanies(token);
+            setCompanies(data);
+
+            if (data.length > 0 && !selectedId) {
+                handleSelectCompany(data[0]);
             }
         } catch (err: any) {
             console.error(err);
@@ -109,7 +63,7 @@ export default function CompanyTemplate() {
     };
 
     // --- Handlers ---
-    const handleSelectCompany = (comp: any) => {
+    const handleSelectCompany = (comp: Company) => {
         setSelectedId(comp.id);
         setForm({
             id: comp.id,
@@ -133,18 +87,26 @@ export default function CompanyTemplate() {
         });
     };
 
+    const handleContactChange = (value: string) => {
+        const formatted = formatPhoneNumber(value);
+        setForm({ ...form, contact: formatted });
+    }
+
     const handleSave = async () => {
         if (!form.name) return showToast("업체명은 필수입니다.", "error");
         if (!token) return;
 
-        const headers = { Authorization: `Bearer ${token}` };
+        // 전화번호 검증
+        if (form.contact && !validatePhoneNumber(form.contact)) {
+            return showToast("올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)", "error");
+        }
 
         try {
             if (form.id) {
-                await axios.patch(`${API_URL}/api/v1/companies/${form.id}`, form, { headers });
+                await updateCompany(token, form.id, form);
                 showToast("저장되었습니다.", "success");
             } else {
-                await axios.post(`${API_URL}/api/v1/companies`, form, { headers });
+                await createCompany(token, form);
                 showToast("신규 등록 완료", "success");
             }
             fetchCompanies();
@@ -159,16 +121,17 @@ export default function CompanyTemplate() {
         if (!window.confirm(`'${form.name}' 업체를 비활성화(삭제) 하시겠습니까?`)) return;
 
         try {
-            await axios.patch(`${API_URL}/api/v1/companies/${form.id}`, 
-                { active: false }, 
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await deactivateCompany(token, form.id);
             showToast("업체가 비활성화 되었습니다.", "success");
             fetchCompanies();
         } catch (err) {
             showToast("처리 실패", "error");
         }
     };
+    
+    if (isLoading) {
+        return <div style={{textAlign: 'center', padding:'50px'}}>로딩 중...</div>
+    }
 
     return (
         <div className="company-container">
@@ -199,7 +162,7 @@ export default function CompanyTemplate() {
                 
                 <div style={{ flex: 1, overflowY: 'auto', display:'flex', flexDirection:'column', gap:'8px' }}>
                     {loading && <div style={{fontSize:'12px', color:'#999', textAlign:'center'}}>로딩 중...</div>}
-                    {companies.map((comp: any) => (
+                    {companies.map((comp: Company) => (
                         <div 
                             key={comp.id}
                             onClick={() => handleSelectCompany(comp)}
@@ -249,7 +212,7 @@ export default function CompanyTemplate() {
                             <label style={{ display:'block', fontSize:'12px', fontWeight:600, color:'#666', marginBottom:'6px'}}>대표 전화</label>
                             <input 
                                 value={form.contact} 
-                                onChange={e => setForm({...form, contact: e.target.value})}
+                                onChange={e => handleContactChange(e.target.value)}
                                 disabled={!isSystemAdmin}
                                 style={{ width:'100%', padding:'10px', border:'1px solid #ddd', borderRadius:'6px' }}
                                 placeholder="010-0000-0000"

@@ -97,3 +97,29 @@ export const getTokenRemainingTime = (): number => {
         return 0;
     }
 };
+
+
+/**
+ * 사용자 권한 체크 (SYSTEM_ADMIN 여부)
+ * @returns SYSTEM_ADMIN이면 true, 아니면 false
+ */
+export const isSystemAdmin = (): boolean => {
+    const userInfo = getUserInfoFromToken();
+    if (!userInfo) return false;
+
+    const role = userInfo.role;
+    return role === "SYSTEM_ADMIN" || role === 0 || role === "0";
+};
+
+/**
+ * 특정 권한(permission) 보유 여부 체크
+ * @param permission - 체크할 권한 문자열
+ * @returns 권한이 있으면 true
+ */
+export const hasPermission = (permission: string): boolean => {
+    const userInfo = getUserInfoFromToken();
+    if (!userInfo) return false;
+
+    const permissions = userInfo.permissions || [];
+    return permissions.includes(permission);
+}
