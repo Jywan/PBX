@@ -123,18 +123,3 @@ async def websocket_endpoint(
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_id)
-
-
-
-
-
-
-    await manager.connect(websocket, room_id)
-    try: 
-        while True:
-            # 클라이언트로 부터 JSON 메세지 수신
-            data = await websocket.receive_json()
-            # 같은 방의 상대에게 그대로 JSON 전달
-            await manager.send_message(data, room_id, websocket)
-    except WebSocketDisconnect:
-        manager.disconnect(websocket, room_id)

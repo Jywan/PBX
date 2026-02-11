@@ -37,10 +37,28 @@ class UserCreate(BaseModel):
     
     @field_validator('username')
     def validate_username(cls, v):
-        """사용자명 검증 - SQL Injection 방지"""
+        """사용자계정 검증 - SQL Injection 방지"""
         if not re.match(r'^[a-zA-Z0-9_]+$', v):
-            raise ValueError('사용자명은 영문, 숫자, 언더스코어(_)만 사용 가능합니다.')
+            raise ValueError('사용자계정은 영문, 숫자, 언더스코어(_)만 사용 가능합니다.')
         return v
+    
+    @field_validator('name')
+    def validate_name(cls, v):
+        """이름 검증 - XSS 방지"""
+        # 위험한 문자 제거 (HTML 태그, 스크립트 등)
+        dangerous_chars = ['<', '>', '"', "'", '&', '/', '\\']
+        if any(char in v for char in dangerous_chars):
+            raise ValueError('이름에 특수문자(<, >, ", \', &, /, \\)는 사용할 수 없습니다.')
+        return v.strip()
+    
+    @field_validator('extension')
+    def validate_extension(cls, v):
+        """내선번호 검증 - 숫자와 하이픈만 사용가능"""
+        if v is None:
+            return v
+        if not re.match(r'^[0-9\-]+$', v):
+            raise ValueError('내선번호는 숫자와 하이픈(-)만 사용 가능합니다.')
+        return v.strip()
 
 class UserUpdate(BaseModel):
     password: Optional[str] = Field(None, min_length=8, max_length=128)
@@ -70,6 +88,25 @@ class UserUpdate(BaseModel):
             raise ValueError(f"비밀번호 요구사항 미충족: {', '.join(errors)}")
         
         return v
+    
+    @field_validator('name')
+    def validate_name(cls, v):
+        """이름 검증 - XSS 방지"""
+        if v is None:
+            return v
+        dangerous_chars = ['<', '>', '"', "'", '&', '/', '\\']
+        if any(char in v for char in dangerous_chars):
+            raise ValueError('이름에 특수문자(<, >, ", \', &, /, \\)는 사용할 수 없습니다.')
+        return v.strip()
+    
+    @field_validator('extension')
+    def validate_extension(cls, v):
+        """내선번호 검증 - 숫자와 하이픈만 허용"""
+        if v is None:
+            return v
+        if not re.match(r'^[0-9\-]+$', v):
+            raise ValueError('내선번호는 숫자와 하이픈(-)만 사용 가능합니다.')
+        return v.strip()
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)

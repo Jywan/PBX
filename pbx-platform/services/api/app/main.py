@@ -1,6 +1,7 @@
 import os
 
 from fastapi import FastAPI
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -15,11 +16,37 @@ settings = get_settings()
 # Rate Limiter 인스턴스 생성
 limiter = Limiter(key_func=get_remote_address)
 
+# 보안 헤더 미들웨어 클래스
+class SecurityHeaderMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+
+        # XSS 방지 헤더
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+
+        # Content Security Policy (CSP)
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'none'"
+        )
+
+        # 추가 보안 헤더
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
+        return response
+
 def create_application() -> FastAPI:
     application = FastAPI(
         title=settings.api_title,
         version=settings.api_version,
     )
+
+    # 보안 헤더 미들웨어 추가 (CORS 보다 먼저 적용 필수)
+    application.add_middleware(SecurityHeaderMiddleware)
 
     # Rate Limiter
     application.state.limiter = limiter
