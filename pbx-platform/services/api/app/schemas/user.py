@@ -1,23 +1,75 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from datetime import datetime
 from typing import Optional, List
+import re
+
 from pbx_common.models import UserRole
 
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=4, max_length=50, description="로그인 ID")
-    password: str = Field(..., min_length=8, description="비밀번호")
+    password: str = Field(..., min_length=8, max_length=128, description="비밀번호")
     name: str = Field(..., min_length=2, max_length=100, description="이름")
     extension: Optional[str] = Field(None, max_length=20, description="내선번호")
     role: UserRole = Field(UserRole.A, description="권한")
     company_id: int = Field(description="소속업체 ID")
 
+    @field_validator('password')
+    def validate_password_strength(cls, v):
+        """비밀번호 복잡도 검증"""
+        errors = []
+
+        # 길이 검증
+        if len(v) < 8:
+            errors.append("최소 8자 이상")
+        
+        # 영문자 포함 확인 (대소문자 구분 없음)
+        if not re.search(r'[a-zA-Z]', v):
+            errors.append("영문자 1개 이상")
+        
+        # 숫자 포함 확인
+        if not re.search(r'[0-9]', v):
+            errors.append("숫자 1개 이상")
+        
+        if errors:
+            raise ValueError(f"비밀번호 요구사항 미충족: {', '.join(errors)}")
+        
+        return v
+    
+    @field_validator('username')
+    def validate_username(cls, v):
+        """사용자명 검증 - SQL Injection 방지"""
+        if not re.match(r'^[a-zA-Z0-9_]+$', v):
+            raise ValueError('사용자명은 영문, 숫자, 언더스코어(_)만 사용 가능합니다.')
+        return v
 
 class UserUpdate(BaseModel):
-    password: Optional[str] = Field(None, min_length=8)
+    password: Optional[str] = Field(None, min_length=8, max_length=128)
     name: Optional[str] = Field(None, min_length=2, max_length=100)
     extension: Optional[str] = Field(None, max_length=20)
     role: Optional[UserRole] = Field(None, description="권한")
     company_id: Optional[int] = Field(None, description="소속업체 ID")
+
+    @field_validator('password')
+    def validate_password_strength(cls, v):
+        """비밀번호 복잡도 검증 - UserCreate와 동일"""
+        if v is None:  # 비밀번호 변경이 없는 경우
+            return v
+        
+        errors = []
+        
+        if len(v) < 8:
+            errors.append("최소 8자 이상")
+        
+        if not re.search(r'[a-zA-Z]', v):
+            errors.append("영문자 1개 이상")
+        
+        if not re.search(r'[0-9]', v):
+            errors.append("숫자 1개 이상")
+        
+        if errors:
+            raise ValueError(f"비밀번호 요구사항 미충족: {', '.join(errors)}")
+        
+        return v
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)

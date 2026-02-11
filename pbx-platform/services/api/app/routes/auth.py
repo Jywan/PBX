@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from datetime import datetime, timezone
 from jose import jwt, JWTError
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from pbx_common.utils.security import SECRET_KEY, ALGORITHM
 from pbx_common.models import User, Permission, UserPermission, UserStatusLog, UserStatus, LoginStatus, UserActivity
@@ -10,10 +12,14 @@ from pbx_common.utils.security import verify_password, create_access_token
 from app.db.session import get_db
 from app.schemas.user import LoginRequest, Token
 
-router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"], responses={404: {"description": "Not found"}})
+router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+
+# Limiter 인스턴스
+limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/login", response_model=Token)
-async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(request: Request, login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     # 1. 계정 체크 (username -> account 매핑)
     result = await db.execute(select(User).where(User.account == login_data.username))
     user = result.scalars().first()
@@ -22,7 +28,7 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not user or not verify_password(login_data.password, user.account_pw):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="존재하지 않는 계정입니다.",
+            detail="아이디 또는 비밀번호가 일치하지 않습니다.",
         )
     
     # 3. UserPermission과 Permission 테이블을 조인해서 code 값만 긁어오기
