@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import Cookies from "js-cookie";
 
 export const useWebRTC = (roomId: string = "test_room") => {
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -78,9 +79,27 @@ export const useWebRTC = (roomId: string = "test_room") => {
     // 시그널링 서버 연결
     const connectSignaling = useCallback(() => {
         if (ws.current?.readyState === WebSocket.OPEN) return;
-        ws.current = new WebSocket(`ws://localhost:8000/ws/signaling/${roomId}`);
-        ws.current.onopen = () => console.log("===시그널링 서버 연결완료===");
+
+        // JWT 토큰 가져오기
+        const token = Cookies.get("access_token");
+        if (!token) {
+            console.error("❌ 인증 토큰이 없습니다.");
+            return;
+        }
+
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const wsURL = API_URL.replace(/^http/, "ws") //http -> ws, https -> wss
+
+        // 토큰을 Query 파라미터로 전달
+        ws.current = new WebSocket(`${wsURL}/ws/signaling/${roomId}?token=${token}`);
+
+        ws.current.onopen = () => console.log("✅ 시그널링 서버 연결완료");
         ws.current.onmessage = (e) => handleSignalingMessage(JSON.parse(e.data));
+        ws.current.onerror = (error) => console.error("❌ WebSocket 에러:", error);
+        ws.current.onclose = (event) => {
+            console.log("🔌 WebSocket 연결 종료:", event.code, event.reason);
+        };
+
     }, [roomId, handleSignalingMessage]);
 
     // 스트림 시작

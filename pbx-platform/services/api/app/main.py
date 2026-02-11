@@ -20,10 +20,14 @@ def create_application() -> FastAPI:
     # CORS 설정 추가
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=[frontend_url],
+        allow_origins=[frontend_url] if frontend_url else [],
         allow_credentials=True,
-        allow_methods=["*"],    # GET, POST, PUT, DELETE 등 모든 메서드 허용
-        allow_headers=["*"],    # 모든 헤더 허용
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],    
+        allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "User-Agent", "DNT", "Cache-Control", "X-Requested-With",
+                        "Sec-WebSocket-key", "Sec-WebSocket-Version", "Sec-WebSocket-Protocol", "Sec-WebSocket-Extensions", "Upgrade",
+                        "Connection"],
+        expose_headers=["Content-Length", "Content-Range"],
+        max_age=3600 # preflight 요청 캐시 시간 (1시간)
     )
 
     # API 라우터
