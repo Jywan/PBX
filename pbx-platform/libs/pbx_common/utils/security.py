@@ -24,6 +24,16 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = 60* 10        # 10시간
 
+# 환경변수 검증 추가
+if not SECRET_PEPPER: 
+    raise ValueError("PASSWORD_PEPPER 환경변수가 설정되지 않았습니다. .env 파일을 확인해주세요.")
+
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY 환경변수가 설정되지 않았습니다. .env 파일을 확인해주세요.")
+
+if not ALGORITHM:
+    raise ValueError("ALGORITHM 환경변수가 설정되지 않았습니다. .env 파일을 확인해주세요.")
+
 def hash_password(password: str) -> str:
     """비밀번호 해시화"""
     peppered_password = f"{SECRET_PEPPER}{password}"

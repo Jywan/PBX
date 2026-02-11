@@ -1,47 +1,50 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select
 from datetime import datetime
 
 from pbx_common.utils.security import SECRET_KEY, ALGORITHM
-from pbx_common.models import User, Company, UserStatus, UserStatusLog, LoginStatus, UserActivity
+from pbx_common.models import User, Company, UserStatus, UserStatusLog, LoginStatus, UserActivity, UserRole
 from pbx_common.utils.security import hash_password
 from app.db.session import get_db
-from app.schemas.user import UserCreate, UserResponse
+from app.schemas.user import UserCreate, UserResponse, UserUpdate
+from app.deps import get_current_user, require_role, require_permission
 
-router = APIRouter(prefix="/api/v1/users", tags=["Users"], responses={404: {"description": "Not found"}})
+router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 
 # 1. 사용자 생성 API
+# 권한: 시스템관리자(SYSTEM_ADMIN)
+# 필요시 운영관리자(MANAGER)도 추가 예정
 @router.post("", response_model=UserResponse)
-async def create_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
-    # 이미 존재하는 계정인지 확인
-    query = select(User).where(User.account == user_in.account)
-    result = await db.execute(query)
-    if result.scalars().first():
+async def create_user(
+    user_in: UserCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.S))
+):
+    # API 필드(username) -> DB 필드(account) 매핑
+    q_account = select(User).where(User.account == user_in.username)
+    if (await db.execute(q_account)).scalars().first():
         raise HTTPException(status_code=400, detail="이미 존재하는 계정입니다.")
 
-    if user_in.company_id is not None:
-        company_query = select(Company).where(Company.id == user_in.company_id)
-        company_result = await db.execute(company_query)
-        if not company_result.scalars().first():
-            raise HTTPException(status_code=404, detail="존재하지 않는 업체 ID입니다.")
+    company = await db.get(Company, user_in.company_id)
+    if not company:
+        raise HTTPException(status_code=404, detail="존재하지 않는 업체 ID입니다.")
 
+    # API 필드명 -> DB 필드명 매핑
     new_user = User(
-        account=user_in.account,
-        account_pw=hash_password(user_in.account_pw),
-        exten=user_in.exten,
+        account=user_in.username,  # username -> account
+        account_pw=hash_password(user_in.password),  # password -> account_pw
+        exten=user_in.extension,  # extension -> exten
         name=user_in.name,
         role=user_in.role,
-        company_id=user_in.company_id 
+        company_id=user_in.company_id
     )
     db.add(new_user)
-
     await db.flush()
 
     now = datetime.now()
     db.add(UserStatus(user_id=new_user.id))
-
     db.add(UserStatusLog(
         user_id=new_user.id,
         login_status=LoginStatus.LOGOUT,
@@ -53,12 +56,106 @@ async def create_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 
     await db.commit()
     await db.refresh(new_user)
-    return new_user
 
-# 2. 사용자 목록 조회(일단 테스트)
+    return UserResponse(
+        id=new_user.id,
+        account=new_user.account,
+        name=new_user.name,
+        exten=new_user.exten,
+        role=new_user.role.value,
+        company_id=new_user.company_id,
+        is_active=new_user.is_active,
+        created_at=new_user.created_at
+    )
+
+# 2. 사용자 목록 조회
+# 권한: 액션권한이 있다면 접근 가능
 @router.get("", response_model=List[UserResponse])
-async def read_users(db: AsyncSession = Depends(get_db)):
+async def read_users(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("agent-detail"))
+):
     query = select(User).order_by(User.id.asc())
     result = await db.execute(query)
+    users = result.scalars().all()
 
-    return result.scalars().all()
+    # UserResponse 형식으로 변환
+    return [
+        UserResponse(
+            id=user.id,
+            account=user.account,
+            name=user.name,
+            exten=user.exten,
+            role=user.role.value,
+            company_id=user.company_id,
+            is_active=user.is_active,
+            created_at=user.created_at
+        )
+        for user in users
+    ]
+
+# 3. 사용자 정보 수정
+# 권한: 시스템관리자(SYSTEM_ADMIN), 운영관리자(MANAGER)
+@router.patch("/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: int, user_in: UserUpdate, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.S, UserRole.M))
+):
+    user = await db.get(User, user_id)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+    # 비밀번호 업데이트 (선택 사항)
+    if user_in.password and len(user_in.password.strip()) > 0:
+        user.account_pw = hash_password(user_in.password)
+
+    # 이름 업데이트
+    if user_in.name is not None:
+        user.name = user_in.name
+
+    # 내선번호 업데이트
+    if user_in.extension is not None:
+        user.exten = user_in.extension
+
+    # 권한 업데이트
+    if user_in.role is not None:
+        user.role = user_in.role
+
+    # 소속업체 업데이트
+    if user_in.company_id is not None:
+        # 업체 존재 여부 확인
+        company = await db.get(Company, user_in.company_id)
+        if not company:
+            raise HTTPException(status_code=404, detail="존재하지 않는 업체 ID입니다.")
+        user.company_id = user_in.company_id
+
+    await db.commit()
+    await db.refresh(user)
+
+    return UserResponse(
+        id=user.id,
+        account=user.account,
+        name=user.name,
+        exten=user.exten,
+        role=user.role.value,
+        company_id=user.company_id,
+        is_active=user.is_active,
+        created_at=user.created_at
+    )
+
+# 4. 사용자 비활성화
+# 권한: 시스템관리자(SYSTEM_ADMIN), 운영관리자(MANAGER)
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: int, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.S, UserRole.M))
+):
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을수 없습니다.")
+    
+    user.is_active = False
+    await db.commit()

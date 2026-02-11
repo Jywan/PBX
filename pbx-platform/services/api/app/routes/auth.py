@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from datetime import datetime, timezone
-from jose import jwt
+from jose import jwt, JWTError
 
 from pbx_common.utils.security import SECRET_KEY, ALGORITHM
 from pbx_common.models import User, Permission, UserPermission, UserStatusLog, UserStatus, LoginStatus, UserActivity
@@ -14,12 +14,12 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"], responses={40
 
 @router.post("/login", response_model=Token)
 async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
-    # 1. 계정 체크
-    result = await db.execute(select(User).where(User.account == login_data.account))
+    # 1. 계정 체크 (username -> account 매핑)
+    result = await db.execute(select(User).where(User.account == login_data.username))
     user = result.scalars().first()
 
     # 2. 유저 존재 여부
-    if not user or not verify_password(login_data.account_pw, user.account_pw):
+    if not user or not verify_password(login_data.password, user.account_pw):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="존재하지 않는 계정입니다.",
@@ -42,7 +42,7 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
 
     last_log_query = await db.execute(
         select(UserStatusLog)
-        .where(UserStatusLog.user_id == user.id, UserStatusLog.ended_at == None)
+        .where(UserStatusLog.user_id == user.id, UserStatusLog.ended_at.is_(None))
     )
     unclosed_log = last_log_query.scalar_one_or_none()
     if unclosed_log:
@@ -94,9 +94,28 @@ async def login(login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
 async def logout(request: Request, db: AsyncSession = Depends(get_db)):
     # 1. 토큰에서 user_id 추출 (보안 및 식별)
     auth_header = request.headers.get("Authorization")
-    token = auth_header.split(" ")[1]
-    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    user_id = payload.get("id")
+
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증 토큰이 없습니다."
+        )
+
+    try:
+        token = auth_header.split(" ")[1]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("id")
+
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="유효하지 않은 토큰입니다."
+            )
+    except (IndexError, JWTError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="유효하지 않은 토큰입니다."
+        )
 
     now = datetime.now(timezone.utc)
 
@@ -104,7 +123,7 @@ async def logout(request: Request, db: AsyncSession = Depends(get_db)):
     # ended_at이 NULL인 이전 상태를 찾아 종료 시각과 지속 시간을 기록합니다.
     result = await db.execute(
         select(UserStatusLog)
-        .where(UserStatusLog.user_id == user_id, UserStatusLog.ended_at == None)
+        .where(UserStatusLog.user_id == user_id, UserStatusLog.ended_at.is_(None))
     )
     unclosed_log = result.scalar_one_or_none()
     

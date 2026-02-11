@@ -22,8 +22,8 @@ export default function LoginPage() {
 
         try {
             const response = await axios.post(`${API_URL}/api/v1/auth/login`, {
-                account: account,
-                account_pw: password
+                username: account,
+                password: password
             });
             const { access_token, permissions } = response.data;
             Cookies.set('access_token', access_token, { expires: 10/24 });

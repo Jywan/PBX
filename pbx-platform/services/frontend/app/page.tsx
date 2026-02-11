@@ -17,6 +17,7 @@ import HistoryTemplate from "@/components/templates/HistoryTemplate";
 import CustomerTemplate from "@/components/templates/CustomerTemplate";
 import CompanyTemplate from "@/components/templates/CompanyTemplate";
 import PermissionTemplate from "@/components/templates/PermissionTemplate";
+import UserTemplate from "@/components/templates/UserTemplate";
 
 // CSS
 import "@/styles/dashboard.css";
@@ -85,7 +86,7 @@ export default function HomePage() {
       
       /* 직접 정해주신 업체관리 소메뉴 분기 */
       case "company-info": return <CompanyTemplate />;
-      case "company-agent": return <div className="placeholder">상담원 관리 전용 화면 준비중</div>;
+      case "company-user": return <UserTemplate />;
       case "company-ivr": return <div className="placeholder">IVR트리 설정 화면 준비중</div>;
       case "company-queue": return <div className="placeholder">Queue 관리 화면 준비중</div>;
       

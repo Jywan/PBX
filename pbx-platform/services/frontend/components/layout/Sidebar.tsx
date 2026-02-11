@@ -53,7 +53,7 @@ export default function Sidebar({ activeMenu, setActiveMenu }: {
                 {openPopup === "company" && (
                     <div className="sub-menu-list">
                         <button className="sub-menu-btn" onClick={() => handleSubMenuClick("company-info")}>업체정보</button>
-                        <button className="sub-menu-btn" onClick={() => handleSubMenuClick("company-agent")}>상담원관리</button>
+                        <button className="sub-menu-btn" onClick={() => handleSubMenuClick("company-user")}>사용자관리</button>
                         <button className="sub-menu-btn" onClick={() => handleSubMenuClick("company-ivr")}>IVR트리</button>
                         <button className="sub-menu-btn" onClick={() => handleSubMenuClick("company-queue")}>Queue관리</button>
                     </div>
