@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation"; 
-import Cookies from "js-cookie";
+
 import "@/styles/templates/company.css";
 import "@/styles/common/toast.css";
+
 import { SuccessIcon, ErrorIcon } from "@/components/common/Icons";
 import type { Company, CompanyFormState } from "@/types/company";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +14,7 @@ import { fetchCompanies as apiFetchCompanies, createCompany, updateCompany, deac
 import { formatPhoneNumber, validatePhoneNumber } from "@/lib/utils/validation";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
+import { formatRelativeTime } from "@/lib/utils/date";
 
 export default function CompanyTemplate() {
     const router = useRouter();
@@ -246,25 +248,61 @@ export default function CompanyTemplate() {
 
                 <div className="company-list-container">
                     {loading && <div className="company-loading">로딩 중...</div>}
-                    {filteredCompanies.length === 0 && !loading && (
+                    
+                    {/* 검색 결과 없음 */}
+                    {!loading && searchTerm && filteredCompanies.length === 0 && (
                         <div className="company-no-results">
                             검색 결과가 없습니다.
                         </div>
                     )}
+                    
+                    {/* 전체 업체 없음 */}
+                    {!loading && !searchTerm && companies.length === 0 && (
+                        <div className="company-empty-state">
+                            <div className="company-empty-icon">📋</div>
+                            <div className="company-empty-title">등록된 업체가 없습니다</div>
+                            <div className="company-empty-description">
+                                첫 번째 업체를 등록하고<br/>
+                                PBX 시스템을 시작해보세요
+                            </div>
+                            {isSystemAdmin && (
+                                <button onClick={handleCreateNew} className="company-empty-action">
+                                    첫 업체 등록하기
+                                </button>
+                            )}
+                        </div>
+                    )}
+                    
+                    {/* 필터 결과 없음 */}
+                    {!loading && !searchTerm && companies.length > 0 && filteredCompanies.length === 0 && (
+                        <div className="company-no-results">
+                            해당 상태의 업체가 없습니다.
+                        </div>
+                    )}
+                    
+                    {/* 업체 카드 목록 */}
                     {filteredCompanies.map((comp: Company) => (
-                        <div 
+                        <div
                             key={comp.id}
                             onClick={() => handleSelectCompany(comp)}
-                            style={{ 
-                                padding:'12px', borderRadius:'8px', cursor:'pointer',
-                                border: selectedId === comp.id ? '1px solid #3b82f6' : '1px solid #f3f4f6',
-                                backgroundColor: selectedId === comp.id ? '#eff6ff' : '#f9fafb'
-                            }}
+                            className={`company-card ${selectedId === comp.id ? 'selected' : ''}`}
                         >
-                            <div style={{ fontWeight: 600, fontSize:'14px', color:'#333' }}>{comp.name}</div>
-                            <div style={{ fontSize:'12px', color:'#888', marginTop:'4px' }}>
-                                {comp.representative || '대표자 미등록'} 
-                                <span style={{float:'right', color: comp.active ? '#10b981' : '#ccc'}}>●</span>
+                            <div className="company-card-header">
+                                <div className="company-card-title">
+                                    {comp.name}
+                                    {comp.callback && (
+                                        <span className="company-callback-icon" title="콜백 활성화">C</span>
+                                    )}
+                                </div>
+                                <span className={`company-status-badge ${comp.active ? 'active' : 'inactive'}`}>
+                                    {comp.active ? '활성' : '비활성'}
+                                </span>
+                            </div>
+                            <div className="company-card-body">
+                                <span>{comp.representative || '대표자 미등록'}</span>
+                                <span className="company-registered-date">
+                                    {formatRelativeTime(comp.registered_at)}
+                                </span>
                             </div>
                         </div>
                     ))}
@@ -274,101 +312,121 @@ export default function CompanyTemplate() {
             {/* 2열: 기본 정보 */}
             <section className="company-col company-col-base">
                 <h3 className="company-title">업체 기본 정보</h3>
-                <div style={{ flex: 1, display:'flex', flexDirection:'column', gap:'16px' }}>
-                    <div>
-                        <label style={{ display:'block', fontSize:'12px', fontWeight:600, color:'#666', marginBottom:'6px'}}>
-                            업체명 <span style={{color:'red'}}>*</span>
-                        </label>
-                        <input 
-                            value={form.name} 
-                            onChange={e => setForm({...form, name: e.target.value})}
-                            disabled={!isSystemAdmin}
-                            style={{ width:'100%', padding:'10px', border:'1px solid #ddd', borderRadius:'6px' }}
-                            placeholder="업체명을 입력하세요"
-                        />
-                    </div>
-                    <div style={{ display:'flex', gap:'12px' }}>
-                        <div style={{ flex:1 }}>
-                            <label style={{ display:'block', fontSize:'12px', fontWeight:600, color:'#666', marginBottom:'6px'}}>대표자명</label>
-                            <input 
-                                value={form.representative} 
-                                onChange={e => setForm({...form, representative: e.target.value})}
-                                disabled={!isSystemAdmin}
-                                style={{ width:'100%', padding:'10px', border:'1px solid #ddd', borderRadius:'6px' }}
-                            />
-                        </div>
-                        <div style={{ flex:1 }}>
-                            <label style={{ display:'block', fontSize:'12px', fontWeight:600, color:'#666', marginBottom:'6px'}}>대표 전화</label>
-                            <input 
-                                value={form.contact} 
-                                onChange={e => handleContactChange(e.target.value)}
-                                disabled={!isSystemAdmin}
-                                style={{ width:'100%', padding:'10px', border:'1px solid #ddd', borderRadius:'6px' }}
-                                placeholder="010-0000-0000"
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label style={{ display:'block', fontSize:'12px', fontWeight:600, color:'#666', marginBottom:'6px'}}>운영 상태</label>
-                        <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor: isSystemAdmin ? 'pointer' : 'default' }}>
-                            <input 
-                                type="checkbox" 
-                                checked={form.active} 
-                                onChange={e => setForm({...form, active: e.target.checked})}
-                                disabled={!isSystemAdmin}
-                                style={{ width:'16px', height:'16px' }}
-                            />
-                            <span style={{ fontSize:'13px' }}>
-                                {form.active ? '운영 중 (Active)' : '운영 중지 (Inactive)'}
-                            </span>
-                        </label>
-                    </div>
-                </div>
 
-                {isSystemAdmin && (
-                    <div style={{ marginTop:'20px', display:'flex', justifyContent:'space-between' }}>
-                        {form.id && (
-                            <button 
-                                onClick={handleDelete}
-                                style={{ background:'#ef4444', color:'white', border:'none', borderRadius:'6px', padding:'10px 16px', fontWeight:600, cursor:'pointer' }}
-                            >
-                                삭제(비활성)
-                            </button>
-                        )}
-                        <button 
-                            onClick={handleSave}
-                            style={{ background:'#3b82f6', color:'white', border:'none', borderRadius:'6px', padding:'10px 20px', fontWeight:600, cursor:'pointer', marginLeft:'auto' }}
-                        >
-                            {form.id ? '변경사항 저장' : '업체 등록'}
-                        </button>
+                {!selectedId && companies.length === 0 ? (
+                    <div className="company-placeholder">
+                        <div>
+                            👈 좌측에서 업체를 등록하거나<br/>선택해주세요
+                        </div>
                     </div>
+                ) : (
+                    <>
+                        <div className="company-form-container">
+                            {/* 업체명 */}
+                            <div className="company-form-group">
+                                <label className="company-form-label">
+                                    업체명 <span className="company-form-label-required">*</span>
+                                </label>
+                                <input 
+                                    value={form.name} 
+                                    onChange={e => setForm({...form, name: e.target.value})}
+                                    disabled={!isSystemAdmin}
+                                    className="company-form-input"
+                                    placeholder="업체명을 입력하세요"
+                                />
+                            </div>
+
+                            {/* 대표자명 + 대표 전화 */}
+                            <div className="company-form-row">
+                                <div className="company-form-col">
+                                    <label className="company-form-label">대표자명</label>
+                                    <input 
+                                        value={form.representative} 
+                                        onChange={e => setForm({...form, representative: e.target.value})}
+                                        disabled={!isSystemAdmin}
+                                        className="company-form-input"
+                                    />
+                                </div>
+                                <div className="company-form-col">
+                                    <label className="company-form-label">대표 전화</label>
+                                    <input 
+                                        value={form.contact} 
+                                        onChange={e => handleContactChange(e.target.value)}
+                                        disabled={!isSystemAdmin}
+                                        className="company-form-input"
+                                        placeholder="010-0000-0000"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 운영 상태 */}
+                            <div className="company-form-group">
+                                <label className="company-form-label">운영 상태</label>
+                                <label className={`company-checkbox-wrapper ${isSystemAdmin ? 'clickable' : ''}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={form.active} 
+                                        onChange={e => setForm({...form, active: e.target.checked})}
+                                        disabled={!isSystemAdmin}
+                                        className="company-checkbox"
+                                    />
+                                    <span className="company-checkbox-label">
+                                        {form.active ? '운영 중 (Active)' : '운영 중지 (Inactive)'}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {isSystemAdmin && (
+                            <div className="company-button-container">
+                                {form.id && (
+                                    <button onClick={handleDelete} className="company-btn-delete">
+                                        삭제(비활성)
+                                    </button>
+                                )}
+                                <button onClick={handleSave} className="company-btn-save">
+                                    {form.id ? '변경사항 저장' : '업체 등록'}
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </section>
 
             {/* 3열: 부가 설정 */}
             <section className="company-col company-col-extra">
                 <h3 className="company-title">연동 및 부가 설정</h3>
-                <div className="col-body">
-                    <div className="form-group" style={{ padding:'15px', background:'#f9fafb', borderRadius:'8px', border: '1px solid #eee' }}>
-                        <label className="form-label" style={{display:'flex', justifyContent:'space-between', alignItems:'center', fontWeight:600, fontSize:'13px'}}>
-                            콜백 기능 사용
-                            <input 
-                                type="checkbox" 
-                                checked={form.callback} 
-                                disabled={!isSystemAdmin}
-                                onChange={e => setForm({...form, callback: e.target.checked})} 
-                                style={{ width:'16px', height:'16px', cursor:'pointer' }}
-                            />
-                        </label>
-                        <p style={{fontSize:'12px', color:'#6b7280', marginTop:'8px', lineHeight: 1.4}}>
-                            상담원 연결 실패 시 고객에게 콜백(Callback) 옵션을 제공합니다.<br/>
-                            <span style={{color:'#3b82f6'}}>* 활성화 시 ARS 시나리오에 반영됩니다.</span>
-                        </p>
+
+                {!selectedId && companies.length === 0 ? (
+                    <div className="company-placeholder">
+                        업체를 먼저 선택해주세요
                     </div>
-                    <div style={{ marginTop:'15px', padding:'15px', background:'#f9fafb', borderRadius:'8px', border: '1px solid #eee', color:'#9ca3af', fontSize:'13px', textAlign:'center' }}>
-                        API Key 설정 및<br/>IVR 시나리오 연동 준비중
+                ) : (
+                    <div className="col-body">
+                        {/* 콜백 설정 */}
+                        <div className="company-setting-box">
+                            <label className="company-setting-label">
+                                콜백 기능 사용
+                                <input 
+                                    type="checkbox" 
+                                    checked={form.callback} 
+                                    disabled={!isSystemAdmin}
+                                    onChange={e => setForm({...form, callback: e.target.checked})} 
+                                    className="company-checkbox"
+                                />
+                            </label>
+                            <p className="company-setting-description">
+                                상담원 연결 실패 시 고객에게 콜백(Callback) 옵션을 제공합니다.<br/>
+                                <span className="company-setting-highlight">* 활성화 시 ARS 시나리오에 반영됩니다.</span>
+                            </p>
+                        </div>
+
+                        {/* 준비중 박스 */}
+                        <div className="company-placeholder-box">
+                            API Key 설정 및<br/>IVR 시나리오 연동 준비중
+                        </div>
                     </div>
-                </div>
+                )}
             </section>
         </div>
     );

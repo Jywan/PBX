@@ -146,3 +146,285 @@
     text-align: center;
     padding: 20px;
 }
+
+/* 업체 카드 */
+.company-card {
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid #f3f4f6;
+    background-color: #f9fafb;
+    transition: all 0.2s ease;
+}
+
+.company-card:hover {
+    background-color: #f3f4f6;
+    border-color: #e5e7eb;
+}
+
+.company-card.selected {
+    border: 1px solid #3b82f6;
+    background-color: #eff6ff;
+}
+
+.company-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.company-card-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.company-card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #888;
+}
+
+.company-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.company-status-badge.active {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.company-status-badge.inactive {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.company-callback-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.company-registered-date {
+    color: #9ca3af;
+    font-size: 11px;
+}
+
+/* 폼 스타일 */
+.company-form-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.company-form-group {
+    /* 개별 폼 그룹 컨테이너 */
+}
+
+.company-form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.company-form-label-required {
+    color: red;
+}
+
+.company-form-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.company-form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.company-form-input:disabled {
+    background-color: #f9fafb;
+    cursor: not-allowed;
+}
+
+.company-form-row {
+    display: flex;
+    gap: 12px;
+}
+
+.company-form-col {
+    flex: 1;
+}
+
+/* 체크박스 */
+.company-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.company-checkbox-wrapper.clickable {
+    cursor: pointer;
+}
+
+.company-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.company-checkbox:disabled {
+    cursor: not-allowed;
+}
+
+.company-checkbox-label {
+    font-size: 13px;
+}
+
+/* 버튼 */
+.company-button-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.company-btn-delete {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s ease;
+}
+
+.company-btn-delete:hover {
+    background: #dc2626;
+}
+
+.company-btn-save {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    margin-left: auto;
+    transition: background 0.2s ease;
+}
+
+.company-btn-save:hover {
+    background: #2563eb;
+}
+
+/* 부가 설정 (3열) */
+.company-setting-box {
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.company-setting-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.company-setting-description {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 8px;
+    line-height: 1.4;
+}
+
+.company-setting-highlight {
+    color: #3b82f6;
+}
+
+.company-placeholder-box {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    color: #9ca3af;
+    font-size: 13px;
+    text-align: center;
+}
+
+/* Empty State */
+.company-empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.company-empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+}
+
+.company-empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.company-empty-description {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.company-empty-action {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.company-empty-action:hover {
+    background: #2563eb;
+}
