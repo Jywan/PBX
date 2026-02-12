@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation"; 
 import Cookies from "js-cookie";
 import "@/styles/templates/company.css";
@@ -35,6 +35,9 @@ export default function CompanyTemplate() {
         callback: false,
         active: true
     });
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+    const [sortBy, setSortBy] = useState<"latest" | "oldest" | "name">("latest");
 
     // --- 데이터 로딩 ---
     useEffect(() => {
@@ -64,6 +67,38 @@ export default function CompanyTemplate() {
             setLoading(false);
         }
     };
+
+    // --- 검색/필터/정렬된 목록 계산 ---
+    const filteredCompanies = useMemo(() => {
+        let result = [...companies];
+
+        // 1. 검색 필터 (업체명, 대표자명)
+        if (searchTerm.trim()) {
+            const term = searchTerm.toLowerCase();
+            result = result.filter(comp => 
+                comp.name.toLowerCase().includes(term) ||
+                (comp.representative && comp.representative.toLowerCase().includes(term))
+            );
+        }
+
+        // 2. 상태 필터
+        if (filterStatus === "active") {
+            result = result.filter(comp => comp.active);
+        } else if (filterStatus === "inactive") {
+            result = result.filter(comp => !comp.active);
+        }
+
+        // 3. 정렬
+        if (sortBy === "latest") {
+            result.sort((a, b) => b.id - a.id); // 최신순 (id DESC)
+        } else if (sortBy === "oldest") {
+            result.sort((a, b) => a.id - b.id); // 오래된순 (id asc)
+        } else if (sortBy === "name") {
+            result.sort((a, b) => a.name.localeCompare(b.name, 'ko'));  // 이름순 (한글고려)
+        }
+
+        return result;
+    }, [companies, searchTerm, filterStatus, sortBy]);
 
     // --- Handlers ---
     const handleSelectCompany = (comp: Company) => {
@@ -162,21 +197,61 @@ export default function CompanyTemplate() {
 
             {/* 1열: 목록 */}
             <section className="company-col company-col-list">
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+                <div className="company-list-header">
                     <h3 className="company-title" style={{margin:0}}>업체 목록</h3>
                     {isSystemAdmin && (
-                        <button 
-                            onClick={handleCreateNew}
-                            style={{ background:'#3b82f6', color:'white', border:'none', borderRadius:'4px', padding:'4px 8px', fontSize:'12px', cursor:'pointer'}}
-                        >
+                        <button onClick={handleCreateNew} className="company-add-btn">
                             + 신규
                         </button>
                     )}
                 </div>
-                
-                <div style={{ flex: 1, overflowY: 'auto', display:'flex', flexDirection:'column', gap:'8px' }}>
-                    {loading && <div style={{fontSize:'12px', color:'#999', textAlign:'center'}}>로딩 중...</div>}
-                    {companies.map((comp: Company) => (
+
+                <div className="company-search-filter-container">
+                    {/* 검색창 */}
+                    <input
+                        type="text"
+                        placeholder="업체명 또는 대표자명 검색..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="company-search-input"
+                    />
+
+                    {/* 필터, 정렬 */}
+                    <div className="company-filter-sort-container">
+                        {/* 상태 필터 */}
+                        <div className="company-filter-buttons">
+                            {(['all', 'active', 'inactive'] as const).map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setFilterStatus(status)}
+                                    className={`company-filter-btn ${filterStatus === status ? 'active' : ''}`}
+                                >
+                                    {status === 'all' ? '전체' : status === 'active' ? '활성' : '비활성'}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 정렬 */}
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value as "latest" | "oldest" | "name")}
+                            className="company-sort-select"
+                        >
+                            <option value="latest">최신순</option>
+                            <option value="oldest">오래된순</option>
+                            <option value="name">이름순</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="company-list-container">
+                    {loading && <div className="company-loading">로딩 중...</div>}
+                    {filteredCompanies.length === 0 && !loading && (
+                        <div className="company-no-results">
+                            검색 결과가 없습니다.
+                        </div>
+                    )}
+                    {filteredCompanies.map((comp: Company) => (
                         <div 
                             key={comp.id}
                             onClick={() => handleSelectCompany(comp)}

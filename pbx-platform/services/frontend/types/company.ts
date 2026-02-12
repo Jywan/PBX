@@ -12,8 +12,7 @@ export interface Company {
     contact?: string;
     callback: boolean;
     active: boolean;
-    created_at?: string;
-    updated_at?: string;
+    registered_at: string;
 }
 
 /**

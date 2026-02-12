@@ -36,3 +36,113 @@
     font-size: 12px;
     text-align: center;
 }
+
+/* 검색/필터/정렬 UI */
+.company-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.company-add-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.company-add-btn:hover {
+    background: #2563eb;
+}
+
+.company-search-filter-container {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.company-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.company-search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.company-filter-sort-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.company-filter-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.company-filter-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: white;
+    color: #666;
+    font-weight: 400;
+    transition: all 0.2s ease;
+}
+
+.company-filter-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.company-filter-btn.active {
+    background-color: #3b82f6;
+    color: white;
+    font-weight: 600;
+}
+
+.company-sort-select {
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+}
+
+.company-sort-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.company-list-container {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.company-loading {
+    font-size: 12px;
+    color: #999;
+    text-align: center;
+}
+
+.company-no-results {
+    font-size: 13px;
+    color: #999;
+    text-align: center;
+    padding: 20px;
+}
