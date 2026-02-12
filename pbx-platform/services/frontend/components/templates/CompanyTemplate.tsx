@@ -11,12 +11,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
 import { fetchCompanies as apiFetchCompanies, createCompany, updateCompany, deactivateCompany } from "@/lib/api/companies";
 import { formatPhoneNumber, validatePhoneNumber } from "@/lib/utils/validation";
+import ConfirmModal from "@/components/common/ConfirmModal";
+import { useConfirmModal } from "@/hooks/useConfirmModal";
 
 export default function CompanyTemplate() {
     const router = useRouter();
 
     const { token, isSystemAdmin, isLoading } = useAuth();
     const { toast, showToast } = useToast();
+    const { isOpen, message, onConfirm, openConfirm, closeConfirm } = useConfirmModal();
 
     // --- Data State ---
     const [companies, setCompanies] = useState<Company[]>([]);
@@ -118,15 +121,16 @@ export default function CompanyTemplate() {
 
     const handleDelete = async () => {
         if (!form.id || !token) return;
-        if (!window.confirm(`'${form.name}' 업체를 비활성화(삭제) 하시겠습니까?`)) return;
-
-        try {
-            await deactivateCompany(token, form.id);
-            showToast("업체가 비활성화 되었습니다.", "success");
-            fetchCompanies();
-        } catch (err) {
-            showToast("처리 실패", "error");
-        }
+        
+        openConfirm(`'${form.name}' 업체를 비활성화(삭제) 하시겠습니까?`, async () => {
+            try {
+                await deactivateCompany(token, form.id!);
+                showToast("업체가 비활성화 되었습니다.", "success");
+                fetchCompanies();
+            } catch (err) {
+                showToast("처리 실패", "error");
+            }
+        });
     };
     
     if (isLoading) {
@@ -135,6 +139,7 @@ export default function CompanyTemplate() {
 
     return (
         <div className="company-container">
+            {/* 토스트 코드 */}
             {toast.type && (
                 <div className="toast-container">
                     <div className={`toast ${toast.type} ${toast.isExiting ? 'exit' : ''}`}>
@@ -145,6 +150,15 @@ export default function CompanyTemplate() {
                     </div>
                 </div>
             )}
+
+            {/* 커스텀 모달 */}
+            <ConfirmModal 
+                isOpen={isOpen}
+                title="비활성화 확인"
+                message={message}
+                onConfirm={onConfirm}
+                onClose={closeConfirm}
+            />
 
             {/* 1열: 목록 */}
             <section className="company-col company-col-list">
