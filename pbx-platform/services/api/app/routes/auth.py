@@ -84,7 +84,8 @@ async def login(request: Request, login_data: LoginRequest, db: AsyncSession = D
             "sub": user.account,
             "name": user.name,
             "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
-            "id": user.id
+            "id": user.id,
+            "company_id": user.company_id
         }
     )
 
