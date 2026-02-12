@@ -428,3 +428,19 @@
 .company-empty-action:hover {
     background: #2563eb;
 }
+
+.company-btn-restore {
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s ease;
+}
+
+.company-btn-restore:hover {
+    background: #059669;
+}

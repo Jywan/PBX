@@ -11,10 +11,11 @@ import type { Company, CompanyFormState } from "@/types/company";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
 import { fetchCompanies as apiFetchCompanies, createCompany, updateCompany, deactivateCompany } from "@/lib/api/companies";
-import { formatPhoneNumber, validatePhoneNumber } from "@/lib/utils/validation";
+import { formatPhoneNumber, validatePhoneNumber, validateBusinessNumber, formatBusinessNumber, validateEmail, validateFaxNumber, formatFaxNumber } from "@/lib/utils/validation";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { formatRelativeTime } from "@/lib/utils/date";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function CompanyTemplate() {
     const router = useRouter();
@@ -35,9 +36,16 @@ export default function CompanyTemplate() {
         representative: "",
         contact: "",
         callback: false,
-        active: true
+        active: true,
+        businessNumber: "",
+        address: "",
+        addressDetail: "",
+        postalCode: "",
+        email: "",
+        fax: ""
     });
     const [searchTerm, setSearchTerm] = useState("");
+    const debounceSearchTerm = useDebounce(searchTerm, 300); // 300ms 디바운스
     const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
     const [sortBy, setSortBy] = useState<"latest" | "oldest" | "name">("latest");
 
@@ -75,8 +83,8 @@ export default function CompanyTemplate() {
         let result = [...companies];
 
         // 1. 검색 필터 (업체명, 대표자명)
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase();
+        if (debounceSearchTerm.trim()) {
+            const term = debounceSearchTerm.toLowerCase();
             result = result.filter(comp => 
                 comp.name.toLowerCase().includes(term) ||
                 (comp.representative && comp.representative.toLowerCase().includes(term))
@@ -100,7 +108,7 @@ export default function CompanyTemplate() {
         }
 
         return result;
-    }, [companies, searchTerm, filterStatus, sortBy]);
+    }, [companies, debounceSearchTerm, filterStatus, sortBy]);
 
     // --- Handlers ---
     const handleSelectCompany = (comp: Company) => {
@@ -111,7 +119,13 @@ export default function CompanyTemplate() {
             representative: comp.representative || "",
             contact: comp.contact || "",
             callback: comp.callback || false,
-            active: comp.active
+            active: comp.active,
+            businessNumber: comp.businessNumber || "",
+            address: comp.address || "",
+            addressDetail: comp.addressDetail || "",
+            postalCode: comp.postalCode || "",
+            email: comp.email || "",
+            fax: comp.fax || ""
         });
     };
 
@@ -123,7 +137,13 @@ export default function CompanyTemplate() {
             representative: "", 
             contact: "", 
             callback: false, 
-            active: true 
+            active: true,
+            businessNumber: "",
+            address: "",
+            addressDetail: "",
+            postalCode: "",
+            email: "",
+            fax: ""
         });
     };
 
@@ -132,6 +152,17 @@ export default function CompanyTemplate() {
         setForm({ ...form, contact: formatted });
     }
 
+    const handleBusinessNumberChange = (value: string) => {
+        const formatted = formatBusinessNumber(value);
+        setForm({ ...form, businessNumber: formatted });
+    };
+    
+    const handleFaxChange = (value: string) => {
+        const formatted = formatFaxNumber(value);
+        setForm({ ...form, fax: formatted });
+    };
+    
+
     const handleSave = async () => {
         if (!form.name) return showToast("업체명은 필수입니다.", "error");
         if (!token) return;
@@ -139,6 +170,24 @@ export default function CompanyTemplate() {
         // 전화번호 검증
         if (form.contact && !validatePhoneNumber(form.contact)) {
             return showToast("올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)", "error");
+        }
+
+        // 사업자등록번호 검증
+        if (form.businessNumber && !validateBusinessNumber(form.businessNumber)) {
+            showToast("올바른 사업자등록번호 형식이 아닙니다. (예: 000-00-00000)", "error");
+            return;
+        }
+
+        // 이메일 검증
+        if (form.email && !validateEmail(form.email)) {
+            showToast("올바른 이메일 형식이 아닙니다.", "error");
+            return;
+        }
+
+        // 팩스번호 검증
+        if (form.fax && !validateFaxNumber(form.fax)) {
+            showToast("올바른 팩스번호 형식이 아닙니다. (예: 02-0000-0000)", "error");
+            return;
         }
 
         try {
@@ -169,6 +218,22 @@ export default function CompanyTemplate() {
             }
         });
     };
+
+    const handleRestore = async () => {
+        if (!form.id || !token) return;
+        
+        openConfirm(`'${form.name}' 업체를 복구(활성화) 하시겠습니까?`, async () => {
+            try {
+                // 기존 updateCompany 함수 재사용
+                await updateCompany(token, form.id!, { active: true });
+                showToast("업체가 복구되었습니다.", "success");
+                fetchCompanies();
+            } catch (err) {
+                showToast("처리 실패", "error");
+            }
+        });
+    };
+    
     
     if (isLoading) {
         return <div style={{textAlign: 'center', padding:'50px'}}>로딩 중...</div>
@@ -299,7 +364,7 @@ export default function CompanyTemplate() {
                                 </span>
                             </div>
                             <div className="company-card-body">
-                                <span>{comp.representative || '대표자 미등록'}</span>
+                                <span>{comp.businessNumber || ''}</span>
                                 <span className="company-registered-date">
                                     {formatRelativeTime(comp.registered_at)}
                                 </span>
@@ -359,30 +424,96 @@ export default function CompanyTemplate() {
                                 </div>
                             </div>
 
-                            {/* 운영 상태 */}
+                            {/* 사업자등록번호 */}
                             <div className="company-form-group">
-                                <label className="company-form-label">운영 상태</label>
-                                <label className={`company-checkbox-wrapper ${isSystemAdmin ? 'clickable' : ''}`}>
+                                <label className="company-form-label">사업자등록번호</label>
+                                <input 
+                                    value={form.businessNumber} 
+                                    onChange={e => handleBusinessNumberChange(e.target.value)}
+                                    disabled={!isSystemAdmin}
+                                    className="company-form-input"
+                                    placeholder="000-00-00000"
+                                />
+                            </div>
+
+                            {/* 주소 + 우편번호 */}
+                            <div className="company-form-row">
+                                <div className="company-form-col" style={{flex: 2}}>
+                                    <label className="company-form-label">주소</label>
                                     <input 
-                                        type="checkbox" 
-                                        checked={form.active} 
-                                        onChange={e => setForm({...form, active: e.target.checked})}
+                                        value={form.address} 
+                                        onChange={e => setForm({...form, address: e.target.value})}
                                         disabled={!isSystemAdmin}
-                                        className="company-checkbox"
+                                        className="company-form-input"
+                                        placeholder="기본 주소"
                                     />
-                                    <span className="company-checkbox-label">
-                                        {form.active ? '운영 중 (Active)' : '운영 중지 (Inactive)'}
-                                    </span>
-                                </label>
+                                </div>
+                                <div className="company-form-col" style={{flex: 1}}>
+                                    <label className="company-form-label">우편번호</label>
+                                    <input 
+                                        value={form.postalCode} 
+                                        onChange={e => setForm({...form, postalCode: e.target.value})}
+                                        disabled={!isSystemAdmin}
+                                        className="company-form-input"
+                                        placeholder="00000"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 상세주소 */}
+                            <div className="company-form-group">
+                                <label className="company-form-label">상세주소</label>
+                                <input 
+                                    value={form.addressDetail} 
+                                    onChange={e => setForm({...form, addressDetail: e.target.value})}
+                                    disabled={!isSystemAdmin}
+                                    className="company-form-input"
+                                    placeholder="상세 주소 입력"
+                                />
+                            </div>
+
+                            {/* 이메일 + 팩스 */}
+                            <div className="company-form-row">
+                                <div className="company-form-col">
+                                    <label className="company-form-label">이메일</label>
+                                    <input 
+                                        value={form.email} 
+                                        onChange={e => setForm({...form, email: e.target.value})}
+                                        disabled={!isSystemAdmin}
+                                        className="company-form-input"
+                                        placeholder="example@company.com"
+                                        type="email"
+                                    />
+                                </div>
+                                <div className="company-form-col">
+                                    <label className="company-form-label">팩스</label>
+                                    <input 
+                                        value={form.fax} 
+                                        onChange={e => handleFaxChange(e.target.value)}
+                                        disabled={!isSystemAdmin}
+                                        className="company-form-input"
+                                        placeholder="02-0000-0000"
+                                    />
+                                </div>
                             </div>
                         </div>
 
                         {isSystemAdmin && (
                             <div className="company-button-container">
                                 {form.id && (
-                                    <button onClick={handleDelete} className="company-btn-delete">
-                                        삭제(비활성)
-                                    </button>
+                                    <>
+                                        {form.active ? (
+                                            // 활성 상태: 삭제(비활성) 버튼
+                                            <button onClick={handleDelete} className="company-btn-delete">
+                                                삭제(비활성)
+                                            </button>
+                                        ) : (
+                                            // 비활성 상태: 복구 버튼
+                                            <button onClick={handleRestore} className="company-btn-restore">
+                                                복구(활성화)
+                                            </button>
+                                        )}
+                                    </>
                                 )}
                                 <button onClick={handleSave} className="company-btn-save">
                                     {form.id ? '변경사항 저장' : '업체 등록'}

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Optional
 from datetime import datetime
 
 from sqlalchemy import Integer, Text, Boolean, TIMESTAMP, func, Index
@@ -19,6 +19,14 @@ class Company(Base):
     manager_phone: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     use_callback: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+    business_number: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    address_detail: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    postal_code: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    fax: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True, server_default=func.now(), 
                                                 onupdate=func.now())

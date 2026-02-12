@@ -13,6 +13,12 @@ export interface Company {
     callback: boolean;
     active: boolean;
     registered_at: string;
+    businessNumber?: string;
+    address?: string;
+    addressDetail?: string;
+    postalCode?: string;
+    email?: string;
+    fax?: string;
 }
 
 /**
@@ -24,6 +30,12 @@ export interface CompanyCreateRequest {
     contact?: string;
     callback?: boolean;
     active?: boolean;
+    businessNumber?: string;
+    address?: string;
+    addressDetail?: string;
+    postalCode?: string;
+    email?: string;
+    fax?: string;
 }
 
 /**
@@ -35,6 +47,12 @@ export interface CompanyUpdateRequest {
     contact?: string;
     callback?: boolean;
     active?: boolean;
+    businessNumber?: string;
+    address?: string;
+    addressDetail?: string;
+    postalCode?: string;
+    email?: string;
+    fax?: string;
 }
 
 /**
@@ -47,4 +65,10 @@ export interface CompanyFormState {
     contact: string;
     callback: boolean;
     active: boolean;
+    businessNumber: string;
+    address: string;
+    addressDetail: string;
+    postalCode: string;
+    email: string;
+    fax: string;
 }
