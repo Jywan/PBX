@@ -68,15 +68,27 @@
 
 .company-search-input {
     width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    padding: 9px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
     font-size: 13px;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+}
+
+.company-search-input:hover {
+    border-color: #d1d5db;
 }
 
 .company-search-input:focus {
     outline: none;
     border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.company-search-input::placeholder {
+    color: #9ca3af;
 }
 
 .company-filter-sort-container {
@@ -233,7 +245,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
 }
 
 .company-form-group {
@@ -242,37 +254,55 @@
 
 .company-form-label {
     display: block;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: #666;
-    margin-bottom: 6px;
+    color: #374151;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
 }
 
 .company-form-label-required {
-    color: red;
+    color: #ef4444;
+    margin-left: 2px;
 }
 
 .company-form-input {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 13px;
+    padding: 11px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+}
+
+.company-form-input:hover:not(:disabled) {
+    border-color: #d1d5db;
 }
 
 .company-form-input:focus {
     outline: none;
     border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
 }
 
 .company-form-input:disabled {
     background-color: #f9fafb;
+    border-color: #e5e7eb;
+    color: #9ca3af;
     cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.company-form-input::placeholder {
+    color: #9ca3af;
 }
 
 .company-form-row {
     display: flex;
-    gap: 12px;
+    gap: 16px;
 }
 
 .company-form-col {
@@ -283,73 +313,114 @@
 .company-checkbox-wrapper {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .company-checkbox-wrapper.clickable {
     cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.company-checkbox-wrapper.clickable:hover {
+    background-color: #f9fafb;
 }
 
 .company-checkbox {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
+    accent-color: #3b82f6;
+    transition: transform 0.1s ease;
+}
+
+.company-checkbox:hover:not(:disabled) {
+    transform: scale(1.05);
 }
 
 .company-checkbox:disabled {
     cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .company-checkbox-label {
-    font-size: 13px;
+    font-size: 14px;
+    color: #374151;
+    font-weight: 500;
+    user-select: none;
 }
 
 /* 버튼 */
 .company-button-container {
-    margin-top: 20px;
+    margin-top: 24px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 .company-btn-delete {
     background: #ef4444;
     color: white;
     border: none;
-    border-radius: 6px;
-    padding: 10px 16px;
+    border-radius: 8px;
+    padding: 11px 20px;
     font-weight: 600;
     cursor: pointer;
-    font-size: 13px;
-    transition: background 0.2s ease;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .company-btn-delete:hover {
     background: #dc2626;
+    box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2), 0 2px 4px -1px rgba(220, 38, 38, 0.1);
+    transform: translateY(-1px);
+}
+
+.company-btn-delete:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .company-btn-save {
     background: #3b82f6;
     color: white;
     border: none;
-    border-radius: 6px;
-    padding: 10px 20px;
+    border-radius: 8px;
+    padding: 11px 24px;
     font-weight: 600;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     margin-left: auto;
-    transition: background 0.2s ease;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .company-btn-save:hover {
     background: #2563eb;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -1px rgba(37, 99, 235, 0.1);
+    transform: translateY(-1px);
+}
+
+.company-btn-save:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 /* 부가 설정 (3열) */
 .company-setting-box {
-    padding: 15px;
+    padding: 18px;
     background: #f9fafb;
-    border-radius: 8px;
-    border: 1px solid #eee;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+}
+
+.company-setting-box:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.04);
 }
 
 .company-setting-label {
@@ -357,26 +428,28 @@
     justify-content: space-between;
     align-items: center;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 14px;
+    color: #374151;
 }
 
 .company-setting-description {
-    font-size: 12px;
+    font-size: 13px;
     color: #6b7280;
-    margin-top: 8px;
-    line-height: 1.4;
+    margin-top: 10px;
+    line-height: 1.5;
 }
 
 .company-setting-highlight {
     color: #3b82f6;
+    font-weight: 600;
 }
 
 .company-placeholder-box {
     margin-top: 15px;
-    padding: 15px;
+    padding: 18px;
     background: #f9fafb;
-    border-radius: 8px;
-    border: 1px solid #eee;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
     color: #9ca3af;
     font-size: 13px;
     text-align: center;
@@ -433,14 +506,22 @@
     background: #10b981;
     color: white;
     border: none;
-    border-radius: 6px;
-    padding: 10px 16px;
+    border-radius: 8px;
+    padding: 11px 20px;
     font-weight: 600;
     cursor: pointer;
-    font-size: 13px;
-    transition: background 0.2s ease;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .company-btn-restore:hover {
     background: #059669;
+    box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.2), 0 2px 4px -1px rgba(5, 150, 105, 0.1);
+    transform: translateY(-1px);
+}
+
+.company-btn-restore:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
