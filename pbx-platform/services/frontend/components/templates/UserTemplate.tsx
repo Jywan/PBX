@@ -15,16 +15,32 @@ import type { User } from "@/types/user";
 // 공통 모달 & 훅 import
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
+import AccessDeniedModal from "@/components/common/AccessDeniedModal";
+import { useAccessDenied } from "@/hooks/useAccessDenied";
 
 type ViewMode = "card" | "table";
 type SortField = "name" | "created_at" | "role" | "username";
 type SortOrder = "asc" | "desc";
 
-export default function UserTemplate() {
+interface UserTemplateProps {
+    onAccessDenied?: () => void;
+}
+
+export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
     const router = useRouter();
 
     // --- Auth & Data State ---
     const { token, isSystemAdmin, companyId, isLoading: authLoading } = useAuth();
+
+    // --- 권한 체크 ---
+    const { isDenied, isChecking } = useAccessDenied({
+        requiredPermission: "agent-detail"
+    });
+
+    // 디버깅: 권한 상태 로그
+    useEffect(() => {
+        console.log('[UserTemplate] 권한 체크 상태 - isChecking:', isChecking, 'isDenied:', isDenied);
+    }, [isChecking, isDenied]);
     const [users, setUsers] = useState<User[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
@@ -326,8 +342,32 @@ export default function UserTemplate() {
         }
     };
 
+    // 권한 체크 중
+    if (isChecking) {
+        return (
+            <div className="user-container">
+                <div className="user-col user-col-list">
+                    <div className="user-header">
+                        <h3 className="user-title">사용자 관리</h3>
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <p style={{ fontSize: '14px', color: '#6b7280' }}>권한 확인 중...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="user-container">
+            {/* 권한 없음 모달 */}
+            <AccessDeniedModal
+                isOpen={isDenied}
+                message="사용자 관리 페이지 접근 권한이 없습니다."
+                redirectPath="/"
+                onRedirect={onAccessDenied}
+            />
+
             {toast.type && (
                 <div className="toast-container">
                     <div className={`toast ${toast.type} ${toast.isExiting ? 'exit' : ''}`}>
@@ -346,8 +386,11 @@ export default function UserTemplate() {
                 onClose={closeConfirm}
             />
 
-            {/* 메인 컨테이너 */}
-            <section className="user-col user-col-list">
+            {/* 권한이 있을 때만 페이지 표시 */}
+            {!isDenied && (
+                <>
+                    {/* 메인 컨테이너 */}
+                    <section className="user-col user-col-list">
                 {/* 헤더 */}
                 <div className="user-header">
                     <h3 className="user-title">사용자 관리</h3>
@@ -759,6 +802,8 @@ export default function UserTemplate() {
                         </div>
                     </div>
                 </div>
+            )}
+                </>
             )}
         </div>
     );

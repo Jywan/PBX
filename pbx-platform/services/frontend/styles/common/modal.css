@@ -32,3 +32,36 @@
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes zoomIn { from { transform: translate(-50%, -50%) scale(0.95); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+
+/* Access Denied Modal */
+.access-denied-modal {
+    max-width: 420px;
+}
+
+.access-denied-icon {
+    font-size: 48px;
+    text-align: center;
+    margin-bottom: 12px;
+    animation: shake 0.5s ease-in-out;
+}
+
+.access-denied-message {
+    font-size: 15px;
+    font-weight: 600;
+    color: #dc2626;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.access-denied-redirect-info {
+    font-size: 13px;
+    color: #6b7280;
+    text-align: center;
+    margin: 0;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
