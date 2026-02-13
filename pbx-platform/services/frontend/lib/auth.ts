@@ -1,4 +1,5 @@
 import Cookies from "js-cookie";
+import { useAuthStore } from "@/store/authStore";
 
 
 /**
@@ -111,15 +112,13 @@ export const isSystemAdmin = (): boolean => {
     return role === "SYSTEM_ADMIN" || role === 0 || role === "0";
 };
 
-/**
- * 특정 권한(permission) 보유 여부 체크
- * @param permission - 체크할 권한 문자열
- * @returns 권한이 있으면 true
- */
 export const hasPermission = (permission: string): boolean => {
-    const userInfo = getUserInfoFromToken();
-    if (!userInfo) return false;
+    const { permissions, expiresAt } = useAuthStore.getState();
 
-    const permissions = userInfo.permissions || [];
+    // 만료 체크
+    if (expiresAt && Date.now() >= expiresAt) {
+        return false;
+    }
+
     return permissions.includes(permission);
 }

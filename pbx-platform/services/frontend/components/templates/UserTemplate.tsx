@@ -10,6 +10,7 @@ import { SuccessIcon, ErrorIcon } from "@/components/common/Icons";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchCompanies } from "@/lib/api/companies";
 import { fetchUsers, createUser, updateUser, deleteUser, restoreUser } from "@/lib/api/users";
+import { fetchPermissionTemplates, fetchUserPermissions, assignUserPermissions } from "@/lib/api/permissions";
 import type { User } from "@/types/user";
 
 // 공통 모달 & 훅 import
@@ -17,6 +18,7 @@ import ConfirmModal from "@/components/common/ConfirmModal";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import AccessDeniedModal from "@/components/common/AccessDeniedModal";
 import { useAccessDenied } from "@/hooks/useAccessDenied";
+import { hasPermission } from "@/lib/auth";
 
 type ViewMode = "card" | "table";
 type SortField = "name" | "created_at" | "role" | "username";
@@ -34,8 +36,11 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
 
     // --- 권한 체크 ---
     const { isDenied, isChecking } = useAccessDenied({
-        requiredPermission: "agent-detail"
+        requiredPermission: "agent"
     });
+
+    // --- 조회 권한액션 ---
+    const canViewUsers = isSystemAdmin || hasPermission("agent-detail");
 
     // 디버깅: 권한 상태 로그
     useEffect(() => {
@@ -84,6 +89,14 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
         company_id: null
     });
 
+    // --- 권한 설정 모달 State ---
+    const [isPermModalOpen, setIsPermModalOpen] = useState(false);
+    const [permTargetUser, setPermTargetUser] = useState<User | null>(null);
+    const [permTemplates, setPermTemplates] = useState<any[]>([]);
+    const [permChecked, setPermChecked] = useState<Set<number>>(new Set());
+    const [permLoading, setPermLoading] = useState(false);
+    const [permSaving, setPermSaving] = useState(false);
+
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | null; isExiting: boolean }>({
         message: "", type: null, isExiting: false
     });
@@ -105,7 +118,8 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
     // --- API Handlers ---
     const fetchInitialData = async () => {
         if (!token) return;
-
+        if (!isSystemAdmin && !hasPermission("agent-detail")) return;
+        
         setLoading(true);
         try {
             if (isSystemAdmin) {
@@ -238,6 +252,93 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
             showToast("재활성화 실패", "error");
         } finally {
             setRestoringId(null);
+        }
+    };
+
+    // --- 권한 설정 모달 핸들러 ---
+    const openPermModal = async (user: User) => {
+        if (!token) return;
+        setPermTargetUser(user);
+        setIsPermModalOpen(true);
+        setPermLoading(true);
+
+        try {
+            const [templates, userPermIds] = await Promise.all([
+                fetchPermissionTemplates(token),
+                fetchUserPermissions(token, user.id)
+            ]);
+            setPermTemplates(templates);
+            setPermChecked(new Set(userPermIds));
+        } catch (error: any) {
+            console.error(error);
+            showToast("권한 정보를 불러오지 못했습니다.", "error");
+            setIsPermModalOpen(false);
+        } finally {
+            setPermLoading(false);
+        }
+    };
+
+    // 메뉴(MENU) 권한 토글 - 해제 시 하위 액션도 모두 해제
+    const handleMenuToggle = (menuId: number) => {
+        setPermChecked(prev => {
+            const next = new Set(prev);
+            if (next.has(menuId)) {
+                next.delete(menuId);
+            } else {
+                next.add(menuId);
+            }
+            return next;
+        });
+    };
+
+    // 액션(ACTION) 권한 토글
+    const handlePermToggle = (permId: number) => {
+        setPermChecked(prev => {
+            const next = new Set(prev);
+            if (next.has(permId)) {
+                next.delete(permId);
+            } else {
+                next.add(permId);
+            }
+            return next;
+        });
+    };
+
+    const handlePermSave = async () => {
+        if (!token || !permTargetUser) return;
+        setPermSaving(true);
+
+        try {
+            // 메뉴별로 그룹핑하여 assign API 호출
+            for (const menu of permTemplates) {
+                if (!menu.is_active) continue;
+                
+                const permissionIds: number[] = [];
+                
+                // 메뉴 권한이 체크되어 있으면 포함
+                if (permChecked.has(menu.id)) {
+                    permissionIds.push(menu.id);
+                }
+
+                // 체크된 액션들 포함
+                (menu.children || [])
+                    .filter((action: any) => action.is_active && permChecked.has(action.id))
+                    .forEach((action: any) => permissionIds.push(action.id));
+
+                await assignUserPermissions(token, {
+                    user_id: permTargetUser.id,
+                    menu_id: menu.id,
+                    permission_ids: permissionIds
+                });
+            }
+
+            showToast(`'${permTargetUser.name}' 권한이 저장되었습니다.`, "success");
+            setIsPermModalOpen(false);
+        } catch (error: any) {
+            console.error(error);
+            showToast("권한 저장에 실패했습니다.", "error");
+        } finally {
+            setPermSaving(false);
         }
     };
 
@@ -487,8 +588,20 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
 
                 {/* 리스트 영역 */}
                 <div className="user-list-container">
+
+                    {/* 조회 권한 없음 */}
+                    {!canViewUsers && (
+                        <div className="user-empty-state">
+                            <div className="user-empty-icon">🔒</div>
+                            <h3 className="user-empty-title">조회 권한이 없습니다</h3>
+                            <p className="user-empty-description">
+                                사용자 목록을 조회할 권한이 없습니다. 관리자에게 문의하세요.
+                            </p>
+                        </div>
+                    )}
+
                     {/* 로딩 */}
-                    {loading && (
+                    {canViewUsers && loading && (
                         <div className="user-loading-container">
                             {Array.from({ length: 3 }).map((_, index) => (
                                 <div key={`skeleton-${index}`} className="user-skeleton-card">
@@ -500,7 +613,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                     )}
 
                     {/* 빈 상태 */}
-                    {!loading && filteredAndSortedUsers.length === 0 && (
+                    {canViewUsers && !loading && filteredAndSortedUsers.length === 0 && (
                         <div className="user-empty-state">
                             <div className="user-empty-icon">👤</div>
                             <h3 className="user-empty-title">사용자가 없습니다</h3>
@@ -514,7 +627,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                     )}
 
                     {/* 카드 뷰 */}
-                    {!loading && viewMode === "card" && paginatedUsers.length > 0 && (
+                    {canViewUsers && !loading && viewMode === "card" && paginatedUsers.length > 0 && (
                         <div className="user-card-list">
                             {paginatedUsers.map((user: any) => (
                                 <div key={user.id} className="user-card">
@@ -537,6 +650,12 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                         </div>
                                     </div>
                                     <div className="user-card-actions">
+                                        <button
+                                            onClick={() => openPermModal(user)}
+                                            className="user-card-perm-btn"
+                                        >
+                                            🔑 권한
+                                        </button>
                                         <button
                                             onClick={() => openModal(user)}
                                             disabled={saving}
@@ -568,7 +687,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                     )}
 
                     {/* 테이블 뷰 */}
-                    {!loading && viewMode === "table" && paginatedUsers.length > 0 && (
+                    {canViewUsers && !loading && viewMode === "table" && paginatedUsers.length > 0 && (
                         <div className="user-table-container">
                             <table className="user-table">
                                 <thead>
@@ -604,6 +723,13 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                             <td>{companies.find(c => c.id === user.company_id)?.name || '-'}</td>
                                             <td className="center">
                                                 <div className="user-table-actions">
+                                                    <button
+                                                        onClick={() => openPermModal(user)}
+                                                        className="user-table-perm-btn"
+                                                        title="권한 설정"
+                                                    >
+                                                        🔑
+                                                    </button>
                                                     <button
                                                         onClick={() => openModal(user)}
                                                         className="user-table-edit-btn"
@@ -798,6 +924,90 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                 className="user-modal-save-btn"
                             >
                                 {saving ? '저장 중...' : (isEditMode ? '✓ 수정 완료' : '✓ 상담원 등록')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 권한 설정 모달 */}
+            {isPermModalOpen && (
+                <div className="user-modal-overlay">
+                    <div className="user-modal-content user-perm-modal">
+                        <div className="user-modal-header">
+                            <h3 className="user-modal-title">
+                                🔑 '{permTargetUser?.name}' 권한 설정
+                            </h3>
+                            <button onClick={() => setIsPermModalOpen(false)} className="user-modal-close-btn">
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="user-modal-body">
+                            {permLoading? (
+                                <div className="user-perm-loading">권한 정보 로딩 중...</div>
+                            ) : permTemplates.filter(m => m.is_active).length === 0 ? (
+                                <div className="user-perm-empty">등록된 권한 템플릿이 없습니다.</div>
+                            ) : (
+                                <div className="user-perm-list">
+                                    {permTemplates
+                                        .filter((menu: any) => menu.is_active)
+                                        .map((menu: any) => (
+                                            <div key={menu.id} className="user-perm-menu-group">
+                                                <div className="user-perm-menu-header">
+                                                    <label className="user-perm-menu-toggle">
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={permChecked.has(menu.id)}
+                                                            onChange={() => handleMenuToggle(menu.id)}
+                                                            className="user-perm-checkbox"
+                                                        />
+                                                        <span className="user-perm-menu-name">{menu.name}</span>
+                                                    </label>
+                                                    <span className="user-perm-menu-code">{menu.code}</span>
+                                                </div>
+                                                <div className="user-perm-actions">
+                                                    {(menu.children || [])
+                                                        .filter((action: any) => action.is_active)
+                                                        .map((action: any) => (
+                                                            <label key={action.id} className="user-perm-action-item">
+                                                                <input 
+                                                                    type="checkbox"
+                                                                    checked={permChecked.has(action.id)}
+                                                                    onChange={() => handlePermToggle(action.id)}
+                                                                    className="user-perm-checkbox"
+                                                                    disabled={!permChecked.has(menu.id)}
+                                                                />
+                                                                <span className={`user-perm-action-name ${!permChecked.has(menu.id) ? 'disabled' : ''}`}>
+                                                                    {action.name}
+                                                                </span>
+                                                                <span className="user-perm-action-code">{action.code}</span>
+                                                            </label>
+                                                        ))}
+                                                    {(menu.children || []).filter((a: any) => a.is_active).length === 0 && (
+                                                        <p className="user-perm-no-actions">등록된 액션이 없습니다.</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="user-modal-footer">
+                            <button
+                                onClick={() => setIsPermModalOpen(false)}
+                                disabled={permSaving}
+                                className="user-modal-cancel-btn"
+                            >
+                                취소
+                            </button>
+                            <button
+                                onClick={handlePermSave}
+                                disabled={permSaving || permLoading}
+                                className="user-modal-save-btn"
+                            >
+                                {permSaving ? '저장 중...' : '✓ 권한 저장'}
                             </button>
                         </div>
                     </div>

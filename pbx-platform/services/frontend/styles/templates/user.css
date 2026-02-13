@@ -897,3 +897,151 @@
     display: flex;
     flex-direction: column;
 }
+
+/* ========== 권한 설정 모달 ========== */
+.user-perm-modal {
+    max-width: 560px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-perm-modal .user-modal-body {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.user-perm-loading,
+.user-perm-empty {
+    padding: 40px 0;
+    text-align: center;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.user-perm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.user-perm-menu-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.user-perm-menu-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.user-perm-menu-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.user-perm-menu-code {
+    font-size: 12px;
+    font-family: monospace;
+    color: #3b82f6;
+    background: #eff6ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.user-perm-actions {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.user-perm-action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.user-perm-action-item:hover {
+    background: #f3f4f6;
+}
+
+.user-perm-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.user-perm-action-name {
+    font-size: 13px;
+    color: #374151;
+    flex: 1;
+}
+
+.user-perm-action-code {
+    font-size: 11px;
+    font-family: monospace;
+    color: #9ca3af;
+}
+
+.user-perm-no-actions {
+    font-size: 13px;
+    color: #9ca3af;
+    text-align: center;
+    padding: 8px 0;
+    margin: 0;
+}
+
+/* 카드 뷰 - 권한 버튼 */
+.user-card-perm-btn {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fffbeb;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.user-card-perm-btn:hover {
+    background: #fef3c7;
+}
+
+/* 테이블 뷰 - 권한 버튼 */
+.user-table-perm-btn {
+    padding: 4px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #fffbeb;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.user-table-perm-btn:hover {
+    background: #fef3c7;
+}
+
+.user-perm-menu-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.user-perm-action-name.disabled {
+    color: #c4c9d1;
+}

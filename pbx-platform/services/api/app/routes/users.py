@@ -5,7 +5,7 @@ from sqlalchemy import select
 from datetime import datetime
 
 from pbx_common.utils.security import SECRET_KEY, ALGORITHM
-from pbx_common.models import User, Company, UserStatus, UserStatusLog, LoginStatus, UserActivity, UserRole
+from pbx_common.models import User, Company, UserStatus, UserStatusLog, LoginStatus, UserActivity, UserRole, UserPermission
 from pbx_common.utils.security import hash_password
 from app.db.session import get_db
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
@@ -204,3 +204,26 @@ async def restore_user(
         is_active=user.is_active,
         created_at=user.created_at
     )
+
+# 6. 사용자별 권한 조회
+# 권한: 시스템관리자(SYSTEM_ADMIN), 운영관리자(MANAGER)
+@router.get("/{user_id}/permissions")
+async def get_user_permissions(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.S, UserRole.M))
+):
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+    result = await db.execute(
+        select(UserPermission.permission_id)
+        .where(
+            UserPermission.user_id == user_id,
+            UserPermission.is_active == True
+        )
+    )
+    permission_ids = [row[0] for row in result.all()]
+
+    return {"permission_ids": permission_ids}

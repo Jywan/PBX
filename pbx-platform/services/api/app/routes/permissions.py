@@ -122,21 +122,22 @@ async def delete_permission_template(permission_id: int, db: AsyncSession = Depe
 
 @router.post("/assign")
 async def assign_user_permissions(data: UserPermissionAssign, db: AsyncSession = Depends(get_db)):
-    # ... 유저 권한 할당 로직은 기존 소스 유지 ...
+    # 해당 메뉴 + 하위 액션의 기존 권한을 모두 비활성화
+    menu_and_action_ids = select(Permission.id).where(
+        (Permission.id == data.menu_id) | (Permission.parent_id == data.menu_id)
+    )
+
     await db.execute(
         update(UserPermission)
-        .where(UserPermission.user_id == data.user_id, 
-                UserPermission.permission_id.in_(
-                    select(Permission.id).where(Permission.parent_id == data.menu_id))
-                )
+        .where(
+            UserPermission.user_id == data.user_id,
+            UserPermission.permission_id.in_(menu_and_action_ids)
+        )
         .values(is_active=False, updated_at=func.now())
     )
 
-    target_ids = set(data.permission_ids)
-    if target_ids:
-        target_ids.add(data.menu_id)
-
-    for p_id in target_ids:
+    # 선택괸 권한 활성화 (menu_id 포함 여부는 프론트에서 결정)
+    for p_id in data.permission_ids:
         stmt = pg_insert(UserPermission).values(
             user_id=data.user_id,
             permission_id=p_id,
