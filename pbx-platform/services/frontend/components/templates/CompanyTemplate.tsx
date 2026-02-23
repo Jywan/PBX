@@ -82,8 +82,8 @@ export default function CompanyTemplate({ onAccessDenied }: CompanyTemplateProps
             const filtered = isSystemAdmin ? data : data.filter(c => c.id === companyId);
             setCompanies(filtered);
 
-            if (data.length > 0 && !selectedId) {
-                handleSelectCompany(data[0]);
+            if (filtered.length > 0 && !selectedId) {
+                handleSelectCompany(filtered[0]);
             }
         } catch (err: any) {
             console.error(err);

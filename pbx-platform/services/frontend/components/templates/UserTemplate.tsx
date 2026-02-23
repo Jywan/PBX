@@ -127,8 +127,10 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
 
         setLoading(true);
         try {
+            const companiesList = await fetchCompanies(token);
+
             if (isSystemAdmin) {
-                const companiesList = await fetchCompanies(token);
+                // const companiesList = await fetchCompanies(token);
                 setCompanies(companiesList);
 
                 // 시스템 관리자는 업체를 선택해야 사용자 목록 조회
@@ -137,11 +139,14 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                     setLoading(false);
                     return;
                 }
+            } else {
+                // 시스템 관리자 외
+                setCompanies(companiesList.filter(c => c.id === companyId));
             }
 
             const usersList = await fetchUsers(
                 token,
-                isSystemAdmin && selectedCompanyId ? selectedCompanyId : undefined
+                isSystemAdmin ? (selectedCompanyId || undefined) : (companyId || undefined)
             );
             setUsers(usersList);
         } catch (error: any) {
@@ -368,8 +373,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                 name: "",
                 extension: "",
                 role: "AGENT",
-                // 시스템 관리자는 현재 선택된 업체로 동기화
-                company_id: isSystemAdmin ? selectedCompanyId : (companies.length > 0 ? companies[0].id : null)
+                company_id: isSystemAdmin ? selectedCompanyId : companyId
             });
             setIsEditMode(false);
         }
