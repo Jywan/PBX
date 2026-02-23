@@ -988,7 +988,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                                             type="checkbox"
                                                             checked={permChecked.has(menu.id)}
                                                             onChange={() => handleMenuToggle(menu.id)}
-                                                            disabled={!canUpsertPermission || !permChecked.has(menu.id)}
+                                                            disabled={!canUpsertPermission}
                                                             className="user-perm-checkbox"
                                                         />
                                                         <span className="user-perm-menu-name">{menu.name}</span>
@@ -1005,7 +1005,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                                                     checked={permChecked.has(action.id)}
                                                                     onChange={() => handlePermToggle(action.id)}
                                                                     className="user-perm-checkbox"
-                                                                    disabled={!permChecked.has(menu.id)}
+                                                                    disabled={!canUpsertPermission || !permChecked.has(menu.id)}
                                                                 />
                                                                 <span className={`user-perm-action-name ${!permChecked.has(menu.id) ? 'disabled' : ''}`}>
                                                                     {action.name}

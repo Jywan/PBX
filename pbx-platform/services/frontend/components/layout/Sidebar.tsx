@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { isSystemAdmin, hasPermission } from "@/lib/auth";
 
 export default function Sidebar({ activeMenu, setActiveMenu }: {
     activeMenu: string,
     setActiveMenu: (menu: string) => void
 }) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const isAdmin = isSystemAdmin();
     const canAccess = (menuCode: string) => isAdmin || hasPermission(menuCode);
 
@@ -32,6 +38,10 @@ export default function Sidebar({ activeMenu, setActiveMenu }: {
             setOpenPopup(popupName);
         }
     };
+
+    if (!mounted) {
+        return <aside className="layout-sidebar"></aside>;
+    }
 
     return (
         <aside className="layout-sidebar">
@@ -60,7 +70,9 @@ export default function Sidebar({ activeMenu, setActiveMenu }: {
                     
                     {openPopup === "company" && (
                         <div className="sub-menu-list">
-                            <button className="sub-menu-btn" onClick={() => handleSubMenuClick("company-info")}>업체정보</button>
+                            {canAccess("company-info") && (
+                                <button className="sub-menu-btn" onClick={() => handleSubMenuClick("company-info")}>업체정보</button>
+                            )}
                             {canAccess("agent") && (
                                 <button className="sub-menu-btn" onClick={() => handleSubMenuClick("company-user")}>사용자관리</button>
                             )}

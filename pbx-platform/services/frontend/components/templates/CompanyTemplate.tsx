@@ -28,7 +28,7 @@ interface CompanyTemplateProps {
 export default function CompanyTemplate({ onAccessDenied }: CompanyTemplateProps) {
     const router = useRouter();
 
-    const { token, isSystemAdmin, isLoading } = useAuth();
+    const { token, isSystemAdmin, companyId, isLoading } = useAuth();
 
     // Menu 권한
     const { isDenied, isChecking }  = useAccessDenied({requiredPermission: "company"});
@@ -79,7 +79,8 @@ export default function CompanyTemplate({ onAccessDenied }: CompanyTemplateProps
         setLoading(true);
         try {
             const data = await apiFetchCompanies(token);
-            setCompanies(data);
+            const filtered = isSystemAdmin ? data : data.filter(c => c.id === companyId);
+            setCompanies(filtered);
 
             if (data.length > 0 && !selectedId) {
                 handleSelectCompany(data[0]);
