@@ -143,7 +143,7 @@ ARI_PASS=<password>
 ARI_APP=pbx_ari
 
 # Database
-DATABASE_URL=postgresql+asyncpg://pbx:pbxpassword@localhost:5432/pbx
+DATABASE_URL=postgresql+asyncpg://pbx:<your-db-password>@localhost:5432/pbx
 
 # Security
 PASSWORD_PEPPER=<random_string>
@@ -212,7 +212,7 @@ enabled = yes
 [ari-user]
 type = user
 read_only = no
-password = strongpassword123   ; .env의 ARI_PASS와 일치해야 함
+password = <your-ari-password>   ; .env의 ARI_PASS와 일치해야 함
 ```
 
 ### `asterisk/http.conf`
@@ -255,7 +255,7 @@ bind=0.0.0.0:5060
 type=auth
 auth_type=userpass
 username=1000
-password=1000pass
+password=<your-sip-password>
 
 [1000]
 type=aor
@@ -276,7 +276,7 @@ direct_media=no
 type=auth
 auth_type=userpass
 username=1001
-password=1001pass
+password=<your-sip-password>
 
 [1001]
 type=aor
@@ -316,7 +316,7 @@ Ubuntu 24.04 기반으로 Asterisk 20 LTS를 소스 빌드합니다.
 ```dockerfile
 FROM ubuntu:24.04
 
-LABEL maintainer="jywan"
+LABEL maintainer="컨테이너명"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Seoul
@@ -334,7 +334,8 @@ RUN apt-get update && apt-get install -y \
 
 # SSH 설정: root 로그인 허용
 RUN mkdir /var/run/sshd
-RUN echo 'root:jywan123!' | chpasswd
+# 비밀번호는 별도 생성후 반영
+RUN echo 'root:<비밀번호>' | chpasswd 
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 # Asterisk 20 LTS 소스 다운로드 및 빌드
@@ -371,7 +372,7 @@ services:
     environment:
       POSTGRES_DB: pbx
       POSTGRES_USER: pbx
-      POSTGRES_PASSWORD: pbxpassword
+      POSTGRES_PASSWORD: <your-db-password>
       TZ: Asia/Seoul
     ports:
       - "5432:5432"
