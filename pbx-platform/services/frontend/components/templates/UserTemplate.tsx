@@ -34,13 +34,18 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
     // --- Auth & Data State ---
     const { token, isSystemAdmin, companyId, isLoading: authLoading } = useAuth();
 
-    // --- 권한 체크 ---
+    // --- Menu 권한 체크 ---
     const { isDenied, isChecking } = useAccessDenied({
         requiredPermission: "agent"
     });
 
-    // --- 조회 권한액션 ---
+    // --- Action 권한 체크 ---
     const canViewUsers = isSystemAdmin || hasPermission("agent-detail");
+    const canCreateUser = isSystemAdmin || hasPermission("agent-create");
+    const canUpdateUser = isSystemAdmin || hasPermission("agent-update");
+    const canDeleteUser = isSystemAdmin || hasPermission("agent-delete");
+    const canViewPermission = isSystemAdmin || hasPermission("agent-permission")
+    const canUpsertPermission = isSystemAdmin || hasPermission("agent-permission-upsert")
 
     // 디버깅: 권한 상태 로그
     useEffect(() => {
@@ -119,7 +124,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
     const fetchInitialData = async () => {
         if (!token) return;
         if (!isSystemAdmin && !hasPermission("agent-detail")) return;
-        
+
         setLoading(true);
         try {
             if (isSystemAdmin) {
@@ -511,9 +516,11 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                 📊 테이블
                             </button>
                         </div>
-                        <button onClick={() => openModal()} className="user-add-btn">
-                            + 신규 등록
-                        </button>
+                        {canCreateUser && (
+                            <button onClick={() => openModal()} className="user-add-btn">
+                                + 신규 등록
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -620,9 +627,11 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                             <p className="user-empty-description">
                                 조건에 맞는 사용자가 없습니다. 새로운 사용자를 등록해보세요.
                             </p>
-                            <button onClick={() => openModal()} className="user-empty-action">
-                                + 신규 사용자 등록
-                            </button>
+                            {canCreateUser && (
+                                <button onClick={() => openModal()} className="user-empty-action">
+                                    + 신규 사용자 등록
+                                </button>
+                            )}
                         </div>
                     )}
 
@@ -650,35 +659,41 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                         </div>
                                     </div>
                                     <div className="user-card-actions">
-                                        <button
-                                            onClick={() => openPermModal(user)}
-                                            className="user-card-perm-btn"
-                                        >
-                                            🔑 권한
-                                        </button>
-                                        <button
-                                            onClick={() => openModal(user)}
-                                            disabled={saving}
-                                            className="user-card-edit-btn"
-                                        >
-                                            ✏️ 수정
-                                        </button>
-                                        {user.is_active === false ? (
+                                        {canViewPermission && (
                                             <button
-                                                onClick={() => handleRestoreClick(user)}
-                                                disabled={restoringId === user.id}
-                                                className="user-card-restore-btn"
+                                                onClick={() => openPermModal(user)}
+                                                className="user-card-perm-btn"
                                             >
-                                                {restoringId === user.id ? '♻️ 복구 중...' : '♻️ 재활성화'}
+                                                🔑 권한
                                             </button>
-                                        ) : (
+                                        )}
+                                        {canUpdateUser && (
                                             <button
-                                                onClick={() => handleDeleteClick(user)}
-                                                disabled={deletingId === user.id}
-                                                className="user-card-delete-btn"
+                                                onClick={() => openModal(user)}
+                                                disabled={saving}
+                                                className="user-card-edit-btn"
                                             >
-                                                {deletingId === user.id ? '🗑️ 삭제 중...' : '🗑️ 삭제'}
+                                                ✏️ 수정
                                             </button>
+                                        )}
+                                        {canDeleteUser && (
+                                            user.is_active === false ? (
+                                                <button
+                                                    onClick={() => handleRestoreClick(user)}
+                                                    disabled={restoringId === user.id}
+                                                    className="user-card-restore-btn"
+                                                >
+                                                    {restoringId === user.id ? '♻️ 복구 중...' : '♻️ 재활성화'}
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleDeleteClick(user)}
+                                                    disabled={deletingId === user.id}
+                                                    className="user-card-delete-btn"
+                                                >
+                                                    {deletingId === user.id ? '🗑️ 삭제 중...' : '🗑️ 삭제'}
+                                                </button>
+                                            )
                                         )}
                                     </div>
                                 </div>
@@ -723,36 +738,42 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                             <td>{companies.find(c => c.id === user.company_id)?.name || '-'}</td>
                                             <td className="center">
                                                 <div className="user-table-actions">
-                                                    <button
-                                                        onClick={() => openPermModal(user)}
-                                                        className="user-table-perm-btn"
-                                                        title="권한 설정"
-                                                    >
-                                                        🔑
-                                                    </button>
-                                                    <button
+                                                    {canViewPermission && (
+                                                        <button
+                                                            onClick={() => openPermModal(user)}
+                                                            className="user-table-perm-btn"
+                                                            title="권한 설정"
+                                                        >
+                                                            🔑
+                                                        </button>
+                                                    )}
+                                                    {canUpdateUser && (
+                                                        <button
                                                         onClick={() => openModal(user)}
                                                         className="user-table-edit-btn"
                                                     >
                                                         ✏️
                                                     </button>
-                                                    {user.is_active === false ? (
-                                                        <button
-                                                            onClick={() => handleRestoreClick(user)}
-                                                            disabled={restoringId === user.id}
-                                                            className="user-table-restore-btn"
-                                                            title="재활성화"
-                                                        >
-                                                            ♻️
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleDeleteClick(user)}
-                                                            disabled={deletingId === user.id}
-                                                            className="user-table-delete-btn"
-                                                        >
-                                                            🗑️
-                                                        </button>
+                                                    )}
+                                                    {canDeleteUser && (
+                                                        user.is_active === false ? (
+                                                            <button
+                                                                onClick={() => handleRestoreClick(user)}
+                                                                disabled={restoringId === user.id}
+                                                                className="user-table-restore-btn"
+                                                                title="재활성화"
+                                                            >
+                                                                ♻️
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleDeleteClick(user)}
+                                                                disabled={deletingId === user.id}
+                                                                className="user-table-delete-btn"
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        )
                                                     )}
                                                 </div>
                                             </td>
@@ -836,7 +857,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                         const value = e.target.value;
                                         setFormData({...formData, company_id: value ? Number(value) : null});
                                     }}
-                                    disabled={isEditMode}
+                                    disabled={isEditMode || (isEditMode ? !canUpdateUser : !canCreateUser)}
                                     className="user-form-input"
                                 >
                                     <option value="">선택하세요</option>
@@ -854,6 +875,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                     value={formData.username}
                                     onChange={e => setFormData({...formData, username: e.target.value})}
                                     placeholder="로그인 아이디 (영문/숫자)"
+                                    disabled={isEditMode ? !canUpdateUser : !canCreateUser}
                                     className="user-form-input"
                                 />
                             </div>
@@ -867,6 +889,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                     value={formData.password}
                                     onChange={e => setFormData({...formData, password: e.target.value})}
                                     placeholder="비밀번호 입력"
+                                    disabled={isEditMode ? !canUpdateUser : !canCreateUser}
                                     className="user-form-input"
                                 />
                                 <p className="user-form-helper-text">
@@ -882,6 +905,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                     value={formData.name}
                                     onChange={e => setFormData({...formData, name: e.target.value})}
                                     placeholder="상담원 실명"
+                                    disabled={isEditMode ? !canUpdateUser : !canCreateUser}
                                     className="user-form-input"
                                 />
                             </div>
@@ -892,6 +916,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                     value={formData.extension}
                                     onChange={e => setFormData({...formData, extension: e.target.value})}
                                     placeholder="예: 201"
+                                    disabled={isEditMode ? !canUpdateUser : !canCreateUser}
                                     className="user-form-input"
                                 />
                             </div>
@@ -901,6 +926,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                 <select
                                     value={formData.role}
                                     onChange={e => setFormData({...formData, role: e.target.value})}
+                                    disabled={isEditMode ? !canUpdateUser : !canCreateUser}
                                     className="user-form-input"
                                 >
                                     <option value="AGENT">상담원 (AGENT)</option>
@@ -918,13 +944,15 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                             >
                                 취소
                             </button>
-                            <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="user-modal-save-btn"
-                            >
-                                {saving ? '저장 중...' : (isEditMode ? '✓ 수정 완료' : '✓ 상담원 등록')}
-                            </button>
+                            {(isEditMode ? canUpdateUser : canCreateUser) && (
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className="user-modal-save-btn"
+                                >
+                                    {saving ? '저장 중...' : (isEditMode ? '✓ 수정 완료' : '✓ 상담원 등록')}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -960,6 +988,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                                                             type="checkbox"
                                                             checked={permChecked.has(menu.id)}
                                                             onChange={() => handleMenuToggle(menu.id)}
+                                                            disabled={!canUpsertPermission || !permChecked.has(menu.id)}
                                                             className="user-perm-checkbox"
                                                         />
                                                         <span className="user-perm-menu-name">{menu.name}</span>
@@ -1002,13 +1031,15 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                             >
                                 취소
                             </button>
-                            <button
-                                onClick={handlePermSave}
-                                disabled={permSaving || permLoading}
-                                className="user-modal-save-btn"
-                            >
-                                {permSaving ? '저장 중...' : '✓ 권한 저장'}
-                            </button>
+                            {canUpsertPermission && (
+                                <button
+                                    onClick={handlePermSave}
+                                    disabled={permSaving || permLoading}
+                                    className="user-modal-save-btn"
+                                >
+                                    {permSaving ? '저장 중...' : '✓ 권한 저장'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
