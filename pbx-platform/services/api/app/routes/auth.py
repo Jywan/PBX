@@ -10,7 +10,7 @@ from pbx_common.utils.security import SECRET_KEY, ALGORITHM
 from pbx_common.models import User, Permission, UserPermission, UserStatusLog, UserStatus, LoginStatus, UserActivity
 from pbx_common.utils.security import verify_password, create_access_token
 from app.db.session import get_db
-from app.schemas.user import LoginRequest, Token
+from app.schemas.user import LoginRequest, Token, ActivityUpdate
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -94,7 +94,8 @@ async def login(request: Request, login_data: LoginRequest, db: AsyncSession = D
     return {
         "access_token": access_token,
         "token_type": "bearer", 
-        "permissions": user_permissions,    
+        "permissions": user_permissions,
+        "activity": UserActivity.READY.value,
     }
 
 @router.post("/logout")
@@ -161,3 +162,57 @@ async def logout(request: Request, db: AsyncSession = Depends(get_db)):
     
     await db.commit()
     return {"message": "success"}
+
+@router.patch("/activity")
+async def update_activity(activity_data: ActivityUpdate, request: Request, db: AsyncSession = Depends(get_db)):
+    # 1. 토큰에서 user_id 추출
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="인증 토큰이 없습니다.")
+    try:
+        token = auth_header.split(" ")[1]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("id")
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 토큰입니다.")
+    except (IndexError, JWTError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 토큰입니다.")
+    
+    # 2. activity 값 검증
+    try: 
+        new_activity = UserActivity(activity_data.activity)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="유효하지 않은 activity 값입니다.")
+    if new_activity == UserActivity.DISABLED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="activity 값을 DISABLED로 설정할 수 없습니다.")
+    
+    now = datetime.now(timezone.utc)
+
+    # 3. 이전 로그 마감
+    result = await db.execute(
+        select(UserStatusLog)
+        .where(UserStatusLog.user_id == user_id, UserStatusLog.ended_at.is_(None))
+    )
+    unclosed_log = result.scalar_one_or_none()
+    if unclosed_log:
+        unclosed_log.ended_at = now
+        diff = now - unclosed_log.started_at
+        unclosed_log.duration = int(diff.total_seconds())
+
+    # 4. UserStatus 업데이트
+    await db.execute(
+        update(UserStatus)
+        .where(UserStatus.user_id == user_id)
+        .values(activity=new_activity)
+    )
+
+    # 5. 새로운 로그 생성
+    db.add(UserStatusLog(
+        user_id=user_id,
+        login_status=LoginStatus.LOGIN,  # 로그인 상태는 유지된다고 가정
+        activity=new_activity,
+        started_at=now
+    ))
+
+    await db.commit()
+    return {"activity": new_activity.value}

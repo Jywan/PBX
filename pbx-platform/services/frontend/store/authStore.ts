@@ -4,7 +4,9 @@ import { persist } from "zustand/middleware";
 interface AuthState {
     permissions: string[];
     expiresAt: number | null;
+    activity: string;
     setPermissions: (perms: string[]) => void;
+    setActivity: (activity: string) => void;
     resetAuth: () => void;
 }
 
@@ -13,6 +15,7 @@ export const useAuthStore = create<AuthState>()(
         (set) => ({
             permissions: [],
             expiresAt: null,
+            activity: "DISABLED",
             setPermissions: (perms) => {
                 // 10시간 뒤의 타임스탬프 계산 (10시간 * 60분 * 60초 * 1000ms)
                 const tenHoursInMs = 10 * 60 * 60 * 1000;
@@ -20,6 +23,7 @@ export const useAuthStore = create<AuthState>()(
                 
                 set({ permissions: perms, expiresAt: expiry });
             },
+            setActivity: (activity) => set({ activity }),
             resetAuth: () => set({ permissions: [] }),
         }),
         {

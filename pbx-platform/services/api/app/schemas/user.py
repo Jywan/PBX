@@ -158,3 +158,7 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     permissions: List[str] = []
+    activity: str
+
+class ActivityUpdate(BaseModel):
+    activity: str

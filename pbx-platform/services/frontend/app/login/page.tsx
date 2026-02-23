@@ -13,6 +13,7 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const router = useRouter();
     const setPermissions = useAuthStore((state) => state.setPermissions);
+    const setActivity = useAuthStore((state) => state.setActivity);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -25,10 +26,13 @@ export default function LoginPage() {
                 username: account,
                 password: password
             });
-            const { access_token, permissions } = response.data;
+            const { access_token, permissions, activity } = response.data;
             Cookies.set('access_token', access_token, { expires: 10/24 });
             if (permissions) {
                 setPermissions(permissions);
+            }
+            if (activity) {
+                setActivity(activity);
             }
             router.push('/'); 
         } catch (err: any) {

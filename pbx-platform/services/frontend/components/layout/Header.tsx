@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import axios from "axios";
+import Cookies from "js-cookie";
 import { getUserInfoFromToken } from "@/lib/auth";
 import { useWebRTC } from "@/hooks/useWebRTC";
+import { useAuthStore } from "@/store/authStore";
 import StatusDropdown from "@/components/ui/StatusDropdown";
 
 const roleMap: Record<string, string> = {
@@ -13,22 +16,47 @@ const roleMap: Record<string, string> = {
 
 export default function Header({ onLogout }: { onLogout: () => void }) {
     const [userData, setUserData] = useState<{ account?: string, name?: string, role?: string } | null>(null);
-    const [currentActivity, setCurrentActivity] = useState<string>("DISABLED");
+
+    const storeActivity = useAuthStore((state) => state.activity);
+    const setStoreActivity = useAuthStore((state) => state.setActivity);
+    const [currentActivity, setCurrentActivity] = useState<string>(storeActivity || "DISABLED");
 
     const remoteAudioRef = useRef<HTMLAudioElement>(null);
-    const { 
+    const {
         localStream,
         remoteStream,
-        stopLocalStream, 
-        isAudioMuted, 
+        stopLocalStream,
+        isAudioMuted,
         toggleAudio,
     } = useWebRTC();
+
+    // store activity가 외부(로그인 등)에서 바뀌면 동기화
+    useEffect(() => {
+        setCurrentActivity(storeActivity || "DISABLED");
+    }, [storeActivity]);
+
+    // activity 변경 공통 함수 (API 호출 + 상태 업데이트)
+    const handleActivityChange = async (newActivity: string) => {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+        const token = Cookies.get('access_token');
+        try {
+            await axios.patch(
+                `${API_URL}/api/v1/auth/activity`,
+                { activity: newActivity },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setCurrentActivity(newActivity);
+            setStoreActivity(newActivity);
+        } catch (err) {
+            console.error("상태 변경 실패:", err);
+        }
+    };
 
     // [연계] 상대방 스트림 수신 시 '통화중' 전환
     useEffect(() => {
         if (remoteStream && remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = remoteStream;
-            setCurrentActivity("ON_CALL");
+            handleActivityChange("ON_CALL");
             remoteAudioRef.current.play().catch(e => console.error("🔊 재생 실패:", e));
         }
     }, [remoteStream]);
@@ -43,22 +71,19 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
     // [연계] 통화 종료 시 '후처리' 전환
     const handleStopCall = () => {
         stopLocalStream();
-        setCurrentActivity("POST_PROCESSING");
+        handleActivityChange("POST_PROCESSING");
     };
 
     return (
         <header className="layout-header">
-            {/* 왼쪽: 상태 관리 및 활성 통화 컨트롤 */}
             <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                 <audio ref={remoteAudioRef} autoPlay playsInline />
-                
-                {/* 1. 상담원 상태 드롭다운 (기존 테스트 버튼 자리) */}
-                <StatusDropdown 
-                    currentActivity={currentActivity} 
-                    onActivityChange={setCurrentActivity} 
+
+                <StatusDropdown
+                    currentActivity={currentActivity}
+                    onActivityChange={handleActivityChange}
                 />
 
-                {/* 2. 통화 중일 때만 나타나는 제어 버튼 (음소거, 종료) */}
                 {localStream && (
                     <div className="call-active-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', borderLeft: '1px solid #ddd', paddingLeft: '20px' }}>
                         <div className="call-status-indicator" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -67,15 +92,15 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
                                 {currentActivity === 'CALLING' ? '연결 중...' : '통화 중'}
                             </span>
                         </div>
-                        <button 
-                            className={`call-sub-btn ${isAudioMuted ? "muted" : ""}`} 
+                        <button
+                            className={`call-sub-btn ${isAudioMuted ? "muted" : ""}`}
                             onClick={toggleAudio}
                             style={{ padding: '4px 12px', borderRadius: '4px', fontSize: '13px' }}
                         >
                             {isAudioMuted ? "🔇 마이크 켬" : "🎤 음소거"}
                         </button>
-                        <button 
-                            className="call-btn stop" 
+                        <button
+                            className="call-btn stop"
                             onClick={handleStopCall}
                             style={{ backgroundColor: '#e74c3c', color: '#fff', padding: '4px 12px', borderRadius: '4px', fontSize: '13px', border: 'none', cursor: 'pointer' }}
                         >
@@ -84,8 +109,7 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
                     </div>
                 )}
             </div>
-            
-            {/* 오른쪽: 사용자 프로필 정보 */}
+
             <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 {userData && (
                     <div className="user-profile-brief">
