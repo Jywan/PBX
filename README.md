@@ -8,9 +8,8 @@ ARI(Asterisk REST Interface)를 통해 통화 이벤트를 실시간으로 처�
 ## 사용 환경
 
 - macOS (Apple Silicon M4 Pro)
-- VMware Fusion (Asterisk 서버용)
-- Ubuntu 24.04.3
-- Asterisk 20.6.0 LTS
+- Docker (Asterisk 서버, PostgreSQL)
+- Asterisk 20 LTS (Ubuntu 24.04 기반 Docker 이미지로 빌드)
 
 ---
 
@@ -308,11 +307,90 @@ sudo asterisk -rx "core reload"
 
 ## Asterisk 서버 (Docker)
 
+`Dockerfile`과 `docker-compose.yml`은 `.gitignore`에 등록되어 있으므로 직접 생성해야 합니다.
+
+### `pbx-platform/Dockerfile`
+
+Ubuntu 24.04 기반으로 Asterisk 20 LTS를 소스 빌드합니다.
+
+```dockerfile
+FROM ubuntu:24.04
+
+LABEL maintainer="jywan"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Seoul
+
+RUN apt-get update && apt-get install -y \
+    wget curl build-essential git subversion \
+    libnewt-dev libssl-dev libncurses5-dev \
+    libsqlite3-dev libjansson-dev libxml2-dev \
+    uuid-dev bison flex aptitude tzdata \
+    libedit-dev libtool libdaemon-dev libasound2-dev \
+    libogg-dev libvorbis-dev libspeex-dev \
+    libspeexdsp-dev libgsm1-dev libsrtp2-dev \
+    vim openssh-server \
+    && rm -rf /var/lib/apt/lists/*
+
+# SSH 설정: root 로그인 허용
+RUN mkdir /var/run/sshd
+RUN echo 'root:jywan123!' | chpasswd
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+# Asterisk 20 LTS 소스 다운로드 및 빌드
+WORKDIR /usr/src
+RUN wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-20-current.tar.gz \
+    && tar zxf asterisk-20-current.tar.gz \
+    && rm asterisk-20-current.tar.gz
+
+RUN cd asterisk-20.*/ && \
+    ./configure --with-jansson-bundled && \
+    make menuselect.makeopts && \
+    make -j$(nproc) && \
+    make install && \
+    make samples && \
+    make config
+
+# 포트: SSH(22), SIP(5060/udp), RTP(10000-10100/udp)
+EXPOSE 22 5060/udp 10000-10100/udp
+
+# SSH + Asterisk 동시 실행
+CMD service ssh start && /usr/sbin/asterisk -fvvvin
+```
+
+### `pbx-platform/docker-compose.yml`
+
+PostgreSQL 컨테이너 정의입니다.
+
+```yaml
+services:
+  postgres:
+    image: postgres:16
+    container_name: pbx-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pbx
+      POSTGRES_USER: pbx
+      POSTGRES_PASSWORD: pbxpassword
+      TZ: Asia/Seoul
+    ports:
+      - "5432:5432"
+    volumes:
+      - pbx_pgdata:/var/lib/postgresql/data
+
+volumes:
+  pbx_pgdata:
+```
+
+### 빌드 및 실행
+
 ```bash
-# 이미지 빌드
+cd pbx-platform
+
+# 1. Asterisk 이미지 빌드 (최초 1회, 시간 소요)
 docker build --no-cache -t my-asterisk:24.04 .
 
-# 컨테이너 실행
+# 2. Asterisk 컨테이너 실행
 docker run -d \
   --name asterisk-server \
   -p 2222:22 \
@@ -321,7 +399,19 @@ docker run -d \
   --restart always \
   my-asterisk:24.04
 
-# 컨테이너 접속
+# 3. Asterisk 설정 파일 복사 (asterisk/ 디렉토리 파일들)
+docker cp ../asterisk/ari.conf asterisk-server:/etc/asterisk/ari.conf
+docker cp ../asterisk/http.conf asterisk-server:/etc/asterisk/http.conf
+docker cp ../asterisk/extensions.conf asterisk-server:/etc/asterisk/extensions.conf
+docker cp ../asterisk/pjsip.conf asterisk-server:/etc/asterisk/pjsip.conf
+
+# 4. Asterisk 설정 리로드
+docker exec asterisk-server asterisk -rx "core reload"
+
+# 5. PostgreSQL 실행
+docker compose up -d
+
+# 컨테이너 접속 (필요 시)
 docker exec -it asterisk-server bash
 ```
 
