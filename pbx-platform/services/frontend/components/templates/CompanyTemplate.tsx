@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 
 import "@/styles/templates/company.css";
 import "@/styles/common/toast.css";
-
 import { SuccessIcon, ErrorIcon } from "@/components/common/Icons";
+
 import type { Company, CompanyFormState } from "@/types/company";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
@@ -17,10 +17,28 @@ import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { formatRelativeTime } from "@/lib/utils/date";
 import { useDebounce } from "@/hooks/useDebounce";
 
-export default function CompanyTemplate() {
+import AccessDeniedModal from "../common/AccessDeniedModal";
+import { useAccessDenied } from "@/hooks/useAccessDenied";
+import { hasPermission } from "@/lib/auth"; 
+
+interface CompanyTemplateProps {
+    onAccessDenied?: () => void;
+}
+
+export default function CompanyTemplate({ onAccessDenied }: CompanyTemplateProps) {
     const router = useRouter();
 
     const { token, isSystemAdmin, isLoading } = useAuth();
+
+    // Menu 권한
+    const { isDenied, isChecking }  = useAccessDenied({requiredPermission: "company"});
+    // Action 권한
+    const canViewCompanies = isSystemAdmin || hasPermission("company-detail"); 
+    const canCreateCompany = isSystemAdmin || hasPermission("company-create");
+    const canUpdateCompany = isSystemAdmin || hasPermission("company-update");
+    const canDeleteCompany = isSystemAdmin || hasPermission("company-delete");
+
+
     const { toast, showToast } = useToast();
     const { isOpen, message, onConfirm, openConfirm, closeConfirm } = useConfirmModal();
 
@@ -57,6 +75,7 @@ export default function CompanyTemplate() {
 
     const fetchCompanies = async () => {
         if (!token) return;
+        if (!isSystemAdmin && !hasPermission("company-detail")) return;
         setLoading(true);
         try {
             const data = await apiFetchCompanies(token);
@@ -238,327 +257,358 @@ export default function CompanyTemplate() {
     if (isLoading) {
         return <div style={{textAlign: 'center', padding:'50px'}}>로딩 중...</div>
     }
+    
+    if (isChecking) {
+        return (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <p style={{ fontSize: '14px', color: '#6b7280' }}>권한 확인중...</p>
+            </div>
+        )
+    }
 
     return (
         <div className="company-container">
-            {/* 토스트 코드 */}
-            {toast.type && (
-                <div className="toast-container">
-                    <div className={`toast ${toast.type} ${toast.isExiting ? 'exit' : ''}`}>
-                        <div className="toast-icon-wrapper">
-                            {toast.type === 'success' ? <SuccessIcon className="toast-icon success" /> : <ErrorIcon className="toast-icon error" />}
-                        </div>
-                        {toast.message}
-                    </div>
-                </div>
-            )}
 
-            {/* 커스텀 모달 */}
-            <ConfirmModal 
-                isOpen={isOpen}
-                title="비활성화 확인"
-                message={message}
-                onConfirm={onConfirm}
-                onClose={closeConfirm}
+            <AccessDeniedModal 
+                isOpen={isDenied}
+                message="업체관리 페이지 접근 권한이 없습니다."
+                redirectPath="/"
+                onRedirect={onAccessDenied}
             />
 
-            {/* 1열: 목록 */}
-            <section className="company-col company-col-list">
-                <div className="company-list-header">
-                    <h3 className="company-title" style={{margin:0}}>업체 목록</h3>
-                    {isSystemAdmin && (
-                        <button onClick={handleCreateNew} className="company-add-btn">
-                            + 신규
-                        </button>
+            {!isDenied && (
+                <>
+                    {/* 토스트 코드 */}
+                    {toast.type && (
+                        <div className="toast-container">
+                            <div className={`toast ${toast.type} ${toast.isExiting ? 'exit' : ''}`}>
+                                <div className="toast-icon-wrapper">
+                                    {toast.type === 'success' ? <SuccessIcon className="toast-icon success" /> : <ErrorIcon className="toast-icon error" />}
+                                </div>
+                                {toast.message}
+                            </div>
+                        </div>
                     )}
-                </div>
 
-                <div className="company-search-filter-container">
-                    {/* 검색창 */}
-                    <input
-                        type="text"
-                        placeholder="업체명 또는 대표자명 검색..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="company-search-input"
+                    {/* 커스텀 모달 */}
+                    <ConfirmModal 
+                        isOpen={isOpen}
+                        title="비활성화 확인"
+                        message={message}
+                        onConfirm={onConfirm}
+                        onClose={closeConfirm}
                     />
 
-                    {/* 필터, 정렬 */}
-                    <div className="company-filter-sort-container">
-                        {/* 상태 필터 */}
-                        <div className="company-filter-buttons">
-                            {(['all', 'active', 'inactive'] as const).map((status) => (
-                                <button
-                                    key={status}
-                                    onClick={() => setFilterStatus(status)}
-                                    className={`company-filter-btn ${filterStatus === status ? 'active' : ''}`}
-                                >
-                                    {status === 'all' ? '전체' : status === 'active' ? '활성' : '비활성'}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* 정렬 */}
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as "latest" | "oldest" | "name")}
-                            className="company-sort-select"
-                        >
-                            <option value="latest">최신순</option>
-                            <option value="oldest">오래된순</option>
-                            <option value="name">이름순</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="company-list-container">
-                    {loading && <div className="company-loading">로딩 중...</div>}
-                    
-                    {/* 검색 결과 없음 */}
-                    {!loading && searchTerm && filteredCompanies.length === 0 && (
-                        <div className="company-no-results">
-                            검색 결과가 없습니다.
-                        </div>
-                    )}
-                    
-                    {/* 전체 업체 없음 */}
-                    {!loading && !searchTerm && companies.length === 0 && (
-                        <div className="company-empty-state">
-                            <div className="company-empty-icon">📋</div>
-                            <div className="company-empty-title">등록된 업체가 없습니다</div>
-                            <div className="company-empty-description">
-                                첫 번째 업체를 등록하고<br/>
-                                PBX 시스템을 시작해보세요
-                            </div>
-                            {isSystemAdmin && (
-                                <button onClick={handleCreateNew} className="company-empty-action">
-                                    첫 업체 등록하기
+                    {/* 1열: 목록 */}
+                    <section className="company-col company-col-list">
+                        <div className="company-list-header">
+                            <h3 className="company-title" style={{margin:0}}>업체 목록</h3>
+                            {canCreateCompany && (
+                                <button onClick={handleCreateNew} className="company-add-btn">
+                                    + 신규
                                 </button>
                             )}
                         </div>
-                    )}
-                    
-                    {/* 필터 결과 없음 */}
-                    {!loading && !searchTerm && companies.length > 0 && filteredCompanies.length === 0 && (
-                        <div className="company-no-results">
-                            해당 상태의 업체가 없습니다.
+
+                        <div className="company-search-filter-container">
+                            {/* 검색창 */}
+                            <input
+                                type="text"
+                                placeholder="업체명 또는 대표자명 검색..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="company-search-input"
+                            />
+
+                            {/* 필터, 정렬 */}
+                            <div className="company-filter-sort-container">
+                                {/* 상태 필터 */}
+                                <div className="company-filter-buttons">
+                                    {(['all', 'active', 'inactive'] as const).map((status) => (
+                                        <button
+                                            key={status}
+                                            onClick={() => setFilterStatus(status)}
+                                            className={`company-filter-btn ${filterStatus === status ? 'active' : ''}`}
+                                        >
+                                            {status === 'all' ? '전체' : status === 'active' ? '활성' : '비활성'}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* 정렬 */}
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value as "latest" | "oldest" | "name")}
+                                    className="company-sort-select"
+                                >
+                                    <option value="latest">최신순</option>
+                                    <option value="oldest">오래된순</option>
+                                    <option value="name">이름순</option>
+                                </select>
+                            </div>
                         </div>
-                    )}
-                    
-                    {/* 업체 카드 목록 */}
-                    {filteredCompanies.map((comp: Company) => (
-                        <div
-                            key={comp.id}
-                            onClick={() => handleSelectCompany(comp)}
-                            className={`company-card ${selectedId === comp.id ? 'selected' : ''}`}
-                        >
-                            <div className="company-card-header">
-                                <div className="company-card-title">
-                                    {comp.name}
-                                    {comp.callback && (
-                                        <span className="company-callback-icon" title="콜백 활성화">C</span>
+
+                        <div className="company-list-container">
+                            {/* 조회 권한 없음 */}
+                            {!canViewCompanies && (
+                                <div className="company-empty-state">
+                                    <div className="company-empty-icon">🔒</div>
+                                    <div className="company-empty-title">조회 권한이 없습니다</div>
+                                    <div className="company-empty-description">
+                                        업체 목록을 조회할 권한이 없습니다. 관리자에게 문의하세요.
+                                    </div>
+                                </div>
+                            )}
+
+                            {canViewCompanies && loading && <div className="company-loading">로딩 중...</div>}
+
+                            {/* 검색 결과 없음 */}
+                            {canViewCompanies && !loading && searchTerm && filteredCompanies.length === 0 && (
+                                <div className="company-no-results">
+                                    검색 결과가 없습니다.
+                                </div>
+                            )}
+
+                            {/* 전체 업체 없음 */}
+                            {canViewCompanies && !loading && !searchTerm && companies.length === 0 && (
+                                <div className="company-empty-state">
+                                    <div className="company-empty-icon">📋</div>
+                                    <div className="company-empty-title">등록된 업체가 없습니다</div>
+                                    <div className="company-empty-description">
+                                        첫 번째 업체를 등록하고<br/>
+                                        PBX 시스템을 시작해보세요
+                                    </div>
+                                    {canCreateCompany && (
+                                        <button onClick={handleCreateNew} className="company-empty-action">
+                                            첫 업체 등록하기
+                                        </button>
                                     )}
                                 </div>
-                                <span className={`company-status-badge ${comp.active ? 'active' : 'inactive'}`}>
-                                    {comp.active ? '활성' : '비활성'}
-                                </span>
-                            </div>
-                            <div className="company-card-body">
-                                <span>{comp.businessNumber || ''}</span>
-                                <span className="company-registered-date">
-                                    {formatRelativeTime(comp.registered_at)}
-                                </span>
-                            </div>
+                            )}
+
+                            {/* 필터 결과 없음 */}
+                            {canViewCompanies && !loading && !searchTerm && companies.length > 0 && filteredCompanies.length === 0 && (
+                                <div className="company-no-results">
+                                    해당 상태의 업체가 없습니다.
+                                </div>
+                            )}
+
+                            {/* 업체 카드 목록 */}
+                            {canViewCompanies && filteredCompanies.map((comp: Company) => (
+                                <div
+                                    key={comp.id}
+                                    onClick={() => handleSelectCompany(comp)}
+                                    className={`company-card ${selectedId === comp.id ? 'selected' : ''}`}
+                                >
+                                    <div className="company-card-header">
+                                        <div className="company-card-title">
+                                            {comp.name}
+                                            {comp.callback && (
+                                                <span className="company-callback-icon" title="콜백 활성화">C</span>
+                                            )}
+                                        </div>
+                                        <span className={`company-status-badge ${comp.active ? 'active' : 'inactive'}`}>
+                                            {comp.active ? '활성' : '비활성'}
+                                        </span>
+                                    </div>
+                                    <div className="company-card-body">
+                                        <span>{comp.businessNumber || ''}</span>
+                                        <span className="company-registered-date">
+                                            {formatRelativeTime(comp.registered_at)}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
-            </section>
+                    </section>
 
-            {/* 2열: 기본 정보 */}
-            <section className="company-col company-col-base">
-                <h3 className="company-title">업체 기본 정보</h3>
+                    {/* 2열: 기본 정보 */}
+                    <section className="company-col company-col-base">
+                        <h3 className="company-title">업체 기본 정보</h3>
 
-                {!selectedId && companies.length === 0 ? (
-                    <div className="company-placeholder">
-                        <div>
-                            👈 좌측에서 업체를 등록하거나<br/>선택해주세요
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <div className="company-form-container">
-                            {/* 업체명 */}
-                            <div className="company-form-group">
-                                <label className="company-form-label">
-                                    업체명 <span className="company-form-label-required">*</span>
-                                </label>
-                                <input 
-                                    value={form.name} 
-                                    onChange={e => setForm({...form, name: e.target.value})}
-                                    disabled={!isSystemAdmin}
-                                    className="company-form-input"
-                                    placeholder="업체명을 입력하세요"
-                                />
-                            </div>
-
-                            {/* 대표자명 + 대표 전화 */}
-                            <div className="company-form-row">
-                                <div className="company-form-col">
-                                    <label className="company-form-label">대표자명</label>
-                                    <input 
-                                        value={form.representative} 
-                                        onChange={e => setForm({...form, representative: e.target.value})}
-                                        disabled={!isSystemAdmin}
-                                        className="company-form-input"
-                                    />
-                                </div>
-                                <div className="company-form-col">
-                                    <label className="company-form-label">대표 전화</label>
-                                    <input 
-                                        value={form.contact} 
-                                        onChange={e => handleContactChange(e.target.value)}
-                                        disabled={!isSystemAdmin}
-                                        className="company-form-input"
-                                        placeholder="010-0000-0000"
-                                    />
+                        {!selectedId && companies.length === 0 ? (
+                            <div className="company-placeholder">
+                                <div>
+                                    👈 좌측에서 업체를 등록하거나<br/>선택해주세요
                                 </div>
                             </div>
+                        ) : (
+                            <>
+                                <div className="company-form-container">
+                                    {/* 업체명 */}
+                                    <div className="company-form-group">
+                                        <label className="company-form-label">
+                                            업체명 <span className="company-form-label-required">*</span>
+                                        </label>
+                                        <input 
+                                            value={form.name} 
+                                            onChange={e => setForm({...form, name: e.target.value})}
+                                            disabled={form.id ? !canUpdateCompany : !canCreateCompany}
+                                            className="company-form-input"
+                                            placeholder="업체명을 입력하세요"
+                                        />
+                                    </div>
 
-                            {/* 사업자등록번호 */}
-                            <div className="company-form-group">
-                                <label className="company-form-label">사업자등록번호</label>
-                                <input 
-                                    value={form.businessNumber} 
-                                    onChange={e => handleBusinessNumberChange(e.target.value)}
-                                    disabled={!isSystemAdmin}
-                                    className="company-form-input"
-                                    placeholder="000-00-00000"
-                                />
-                            </div>
+                                    {/* 대표자명 + 대표 전화 */}
+                                    <div className="company-form-row">
+                                        <div className="company-form-col">
+                                            <label className="company-form-label">대표자명</label>
+                                            <input 
+                                                value={form.representative} 
+                                                onChange={e => setForm({...form, representative: e.target.value})}
+                                                disabled={form.id ? !canUpdateCompany : !canCreateCompany}
+                                                className="company-form-input"
+                                            />
+                                        </div>
+                                        <div className="company-form-col">
+                                            <label className="company-form-label">대표 전화</label>
+                                            <input 
+                                                value={form.contact} 
+                                                onChange={e => handleContactChange(e.target.value)}
+                                                disabled={form.id ? !canUpdateCompany : !canCreateCompany}
+                                                className="company-form-input"
+                                                placeholder="010-0000-0000"
+                                            />
+                                        </div>
+                                    </div>
 
-                            {/* 주소 + 우편번호 */}
-                            <div className="company-form-row">
-                                <div className="company-form-col" style={{flex: 2}}>
-                                    <label className="company-form-label">주소</label>
-                                    <input 
-                                        value={form.address} 
-                                        onChange={e => setForm({...form, address: e.target.value})}
-                                        disabled={!isSystemAdmin}
-                                        className="company-form-input"
-                                        placeholder="기본 주소"
-                                    />
+                                    {/* 사업자등록번호 */}
+                                    <div className="company-form-group">
+                                        <label className="company-form-label">사업자등록번호</label>
+                                        <input 
+                                            value={form.businessNumber} 
+                                            onChange={e => handleBusinessNumberChange(e.target.value)}
+                                            disabled={form.id ? !canUpdateCompany : !canCreateCompany}
+                                            className="company-form-input"
+                                            placeholder="000-00-00000"
+                                        />
+                                    </div>
+
+                                    {/* 주소 + 우편번호 */}
+                                    <div className="company-form-row">
+                                        <div className="company-form-col" style={{flex: 2}}>
+                                            <label className="company-form-label">주소</label>
+                                            <input 
+                                                value={form.address} 
+                                                onChange={e => setForm({...form, address: e.target.value})}
+                                                disabled={form.id ? !canUpdateCompany : !canCreateCompany}
+                                                className="company-form-input"
+                                                placeholder="기본 주소"
+                                            />
+                                        </div>
+                                        <div className="company-form-col" style={{flex: 1}}>
+                                            <label className="company-form-label">우편번호</label>
+                                            <input 
+                                                value={form.postalCode} 
+                                                onChange={e => setForm({...form, postalCode: e.target.value})}
+                                                disabled={form.id ? !canUpdateCompany : !canCreateCompany}
+                                                className="company-form-input"
+                                                placeholder="00000"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* 상세주소 */}
+                                    <div className="company-form-group">
+                                        <label className="company-form-label">상세주소</label>
+                                        <input 
+                                            value={form.addressDetail} 
+                                            onChange={e => setForm({...form, addressDetail: e.target.value})}
+                                            disabled={form.id ? !canUpdateCompany : !canCreateCompany}
+                                            className="company-form-input"
+                                            placeholder="상세 주소 입력"
+                                        />
+                                    </div>
+
+                                    {/* 이메일 + 팩스 */}
+                                    <div className="company-form-row">
+                                        <div className="company-form-col">
+                                            <label className="company-form-label">이메일</label>
+                                            <input 
+                                                value={form.email} 
+                                                onChange={e => setForm({...form, email: e.target.value})}
+                                                disabled={form.id ? !canUpdateCompany : !canCreateCompany}
+                                                className="company-form-input"
+                                                placeholder="example@company.com"
+                                                type="email"
+                                            />
+                                        </div>
+                                        <div className="company-form-col">
+                                            <label className="company-form-label">팩스</label>
+                                            <input 
+                                                value={form.fax} 
+                                                onChange={e => handleFaxChange(e.target.value)}
+                                                disabled={form.id ? !canUpdateCompany : !canCreateCompany}
+                                                className="company-form-input"
+                                                placeholder="02-0000-0000"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="company-form-col" style={{flex: 1}}>
-                                    <label className="company-form-label">우편번호</label>
-                                    <input 
-                                        value={form.postalCode} 
-                                        onChange={e => setForm({...form, postalCode: e.target.value})}
-                                        disabled={!isSystemAdmin}
-                                        className="company-form-input"
-                                        placeholder="00000"
-                                    />
-                                </div>
-                            </div>
 
-                            {/* 상세주소 */}
-                            <div className="company-form-group">
-                                <label className="company-form-label">상세주소</label>
-                                <input 
-                                    value={form.addressDetail} 
-                                    onChange={e => setForm({...form, addressDetail: e.target.value})}
-                                    disabled={!isSystemAdmin}
-                                    className="company-form-input"
-                                    placeholder="상세 주소 입력"
-                                />
-                            </div>
-
-                            {/* 이메일 + 팩스 */}
-                            <div className="company-form-row">
-                                <div className="company-form-col">
-                                    <label className="company-form-label">이메일</label>
-                                    <input 
-                                        value={form.email} 
-                                        onChange={e => setForm({...form, email: e.target.value})}
-                                        disabled={!isSystemAdmin}
-                                        className="company-form-input"
-                                        placeholder="example@company.com"
-                                        type="email"
-                                    />
-                                </div>
-                                <div className="company-form-col">
-                                    <label className="company-form-label">팩스</label>
-                                    <input 
-                                        value={form.fax} 
-                                        onChange={e => handleFaxChange(e.target.value)}
-                                        disabled={!isSystemAdmin}
-                                        className="company-form-input"
-                                        placeholder="02-0000-0000"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {isSystemAdmin && (
-                            <div className="company-button-container">
-                                {form.id && (
-                                    <>
-                                        {form.active ? (
-                                            // 활성 상태: 삭제(비활성) 버튼
-                                            <button onClick={handleDelete} className="company-btn-delete">
-                                                삭제(비활성)
-                                            </button>
-                                        ) : (
-                                            // 비활성 상태: 복구 버튼
-                                            <button onClick={handleRestore} className="company-btn-restore">
-                                                복구(활성화)
-                                            </button>
+                                {(canCreateCompany || canUpdateCompany || canDeleteCompany) && (
+                                    <div className="company-button-container">
+                                        {form.id && canDeleteCompany && (
+                                            <>
+                                                {form.active ? (
+                                                    <button onClick={handleDelete} className="company-btn-delete">삭제(비활성)</button>
+                                                ) : (
+                                                    <button onClick={handleRestore} className="company-btn-restore">복구(활성화)</button>
+                                                )}
+                                            </>
                                         )}
-                                    </>
+                                        {form.id ? (
+                                            canUpdateCompany && (
+                                                <button onClick={handleSave} className="company-btn-save">변경사항 저장</button>
+                                            )
+                                        ) : (
+                                            canCreateCompany && (
+                                                <button onClick={handleSave} className="company-btn-save">업체 등록</button>
+                                            )
+                                        )}
+                                    </div>
                                 )}
-                                <button onClick={handleSave} className="company-btn-save">
-                                    {form.id ? '변경사항 저장' : '업체 등록'}
-                                </button>
+                            </>
+                        )}
+                    </section>
+
+                    {/* 3열: 부가 설정 */}
+                    <section className="company-col company-col-extra">
+                        <h3 className="company-title">연동 및 부가 설정</h3>
+
+                        {!selectedId && companies.length === 0 ? (
+                            <div className="company-placeholder">
+                                업체를 먼저 선택해주세요
+                            </div>
+                        ) : (
+                            <div className="col-body">
+                                {/* 콜백 설정 */}
+                                <div className="company-setting-box">
+                                    <label className="company-setting-label">
+                                        콜백 기능 사용
+                                        <input 
+                                            type="checkbox" 
+                                            checked={form.callback} 
+                                            disabled={form.id ? !canUpdateCompany : !canCreateCompany}
+                                            onChange={e => setForm({...form, callback: e.target.checked})} 
+                                            className="company-checkbox"
+                                        />
+                                    </label>
+                                    <p className="company-setting-description">
+                                        상담원 연결 실패 시 고객에게 콜백(Callback) 옵션을 제공합니다.<br/>
+                                        <span className="company-setting-highlight">* 활성화 시 ARS 시나리오에 반영됩니다.</span>
+                                    </p>
+                                </div>
+
+                                {/* 준비중 박스 */}
+                                <div className="company-placeholder-box">
+                                    API Key 설정 및<br/>IVR 시나리오 연동 준비중
+                                </div>
                             </div>
                         )}
-                    </>
-                )}
-            </section>
-
-            {/* 3열: 부가 설정 */}
-            <section className="company-col company-col-extra">
-                <h3 className="company-title">연동 및 부가 설정</h3>
-
-                {!selectedId && companies.length === 0 ? (
-                    <div className="company-placeholder">
-                        업체를 먼저 선택해주세요
-                    </div>
-                ) : (
-                    <div className="col-body">
-                        {/* 콜백 설정 */}
-                        <div className="company-setting-box">
-                            <label className="company-setting-label">
-                                콜백 기능 사용
-                                <input 
-                                    type="checkbox" 
-                                    checked={form.callback} 
-                                    disabled={!isSystemAdmin}
-                                    onChange={e => setForm({...form, callback: e.target.checked})} 
-                                    className="company-checkbox"
-                                />
-                            </label>
-                            <p className="company-setting-description">
-                                상담원 연결 실패 시 고객에게 콜백(Callback) 옵션을 제공합니다.<br/>
-                                <span className="company-setting-highlight">* 활성화 시 ARS 시나리오에 반영됩니다.</span>
-                            </p>
-                        </div>
-
-                        {/* 준비중 박스 */}
-                        <div className="company-placeholder-box">
-                            API Key 설정 및<br/>IVR 시나리오 연동 준비중
-                        </div>
-                    </div>
-                )}
-            </section>
+                    </section>
+                </>
+            )}
         </div>
     );
 }
