@@ -2,10 +2,10 @@
 .consult-container {
     display: flex;
     height: 100%;
-    gap: 20px;
+    gap: 16px;
 }
 
-/* 3등분 컬럼 공통 스타일 */
+/* 3열 컬럼 공통 */
 .consult-col {
     display: flex;
     flex-direction: column;
@@ -13,40 +13,452 @@
     border: 1px solid #e5e8eb;
     border-radius: 16px;
     padding: 20px;
+    overflow: hidden;
 }
 
-/* 1단: 좌측 목록 (고정폭) */
-.col-left-list {
-    flex: 0 0 260px;
+.col-left-list  { flex: 0 0 260px; }
+.col-center-work { flex: 1; }
+.col-right-info { flex: 0 0 340px; }
+
+/* ── 컬럼 헤더 ── */
+.consult-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
 }
 
-/* 2단: 중앙 작업대 (확장형) */
-.col-center-work {
-    flex: 1;
-    background-color: #f9fafb; 
-}
-
-/* 3단: 우측 정보 (고정폭) */
-.col-right-info {
-    flex: 0 0 340px;
-}
-
-/* 섹션 제목 */
 .consult-section-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
-    margin-bottom: 15px;
+    color: #191f28;
+    margin: 0 0 14px 0;
+}
+
+.consult-badge {
+    background-color: #3b82f6;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    line-height: 1.6;
+}
+
+/* ── 빈 상태 ── */
+.consult-empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #c5ccd5;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* ── 좌측: 인입 목록 ── */
+.waiting-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.waiting-item {
+    padding: 12px 14px;
+    border: 1px solid #e5e8eb;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.waiting-item:hover {
+    background-color: #f5f8ff;
+    border-color: #bfcff8;
+}
+
+.waiting-item.selected {
+    background-color: #eef3ff;
+    border-color: #3b82f6;
+}
+
+.waiting-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.waiting-number {
+    font-size: 13px;
+    font-weight: 600;
     color: #191f28;
 }
 
-/* 뼈대용 박스 */
-.consult-box-placeholder {
-    flex: 1;
-    border: 1px dashed #d1d6db;
+.waiting-active-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #22c55e;
+    animation: blink 1.2s ease-in-out infinite;
+}
+
+.waiting-item-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.waiting-queue {
+    font-size: 11px;
+    color: #fff;
+    background-color: #6b7684;
+    border-radius: 10px;
+    padding: 2px 8px;
+}
+
+.waiting-time {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #8b95a1;
+}
+
+/* ── 중앙: 통화 상태 바 ── */
+.call-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background-color: #fff5f5;
+    border: 1px solid #fecaca;
     border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+
+.call-info-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.call-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #ef4444;
+    flex-shrink: 0;
+}
+
+.call-number {
+    font-size: 14px;
+    font-weight: 700;
+    color: #191f28;
+    margin: 0;
+}
+
+.call-queue-label {
+    font-size: 11px;
+    color: #8b95a1;
+    margin: 2px 0 0 0;
+}
+
+.call-timer {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #ef4444;
+    white-space: nowrap;
+}
+
+.btn-end-call {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background-color: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.btn-end-call:hover { background-color: #dc2626; }
+
+/* ── 중앙: 탭 ── */
+.consult-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid #e5e8eb;
+    margin-bottom: 14px;
+}
+
+.consult-tab {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 13px;
+    font-weight: 500;
+    color: #8b95a1;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    margin-bottom: -1px;
+}
+
+.consult-tab:hover { color: #3b82f6; }
+.consult-tab.active {
+    color: #3b82f6;
+    font-weight: 700;
+    border-bottom-color: #3b82f6;
+}
+
+/* ── 중앙: 탭 콘텐츠 ── */
+.consult-tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.memo-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+}
+
+.memo-textarea {
+    flex: 1;
+    width: 100%;
+    resize: none;
+    border: 1px solid #e5e8eb;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #191f28;
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+}
+
+.memo-textarea:focus { border-color: #3b82f6; }
+.memo-textarea::placeholder { color: #c5ccd5; }
+
+.memo-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.memo-char-count {
+    font-size: 12px;
+    color: #8b95a1;
+}
+
+.btn-save-memo {
+    padding: 7px 20px;
+    background-color: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-save-memo:hover:not(:disabled) { background-color: #2563eb; }
+.btn-save-memo:disabled {
+    background-color: #d1d6db;
+    cursor: not-allowed;
+}
+
+.script-viewer {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #f9fafb;
+    border: 1px solid #e5e8eb;
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #334155;
+    white-space: pre-wrap;
+    font-family: inherit;
+    margin: 0;
+}
+
+/* ── 우측: 고객 정보 ── */
+.customer-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.customer-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: #3b82f6;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+}
+
+.customer-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #191f28;
+    margin: 0 0 3px 0;
+}
+
+.customer-company {
+    font-size: 12px;
     color: #8b95a1;
+    margin: 0;
+}
+
+.customer-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.customer-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 13px;
+}
+
+.detail-label {
+    color: #8b95a1;
+    min-width: 60px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    color: #191f28;
+    font-weight: 500;
+}
+
+.customer-memo-box {
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #92400e;
+    line-height: 1.5;
+    margin-top: 4px;
+}
+
+/* ── 우측: 상담 이력 ── */
+.history-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-top: 1px solid #e5e8eb;
+    padding-top: 14px;
+}
+
+.history-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #191f28;
+    margin: 0 0 10px 0;
+}
+
+.history-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px 12px;
+    background-color: #f9fafb;
+    border-radius: 10px;
+    gap: 8px;
+}
+
+.history-item-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.history-type {
+    font-size: 10px;
+    font-weight: 600;
+    color: #3b82f6;
+    background-color: #eff6ff;
+    border-radius: 6px;
+    padding: 1px 6px;
+    width: fit-content;
+}
+
+.history-summary {
+    font-size: 12px;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-item-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.history-date {
+    font-size: 11px;
+    color: #8b95a1;
+}
+
+.history-duration {
+    font-size: 11px;
+    color: #8b95a1;
+}
+
+/* blink 애니메이션 (dashboard.css에 없을 경우 대비) */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
 }
