@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import "@/styles/templates/user.css";
-import "@/styles/common/toast.css";
-import { SuccessIcon, ErrorIcon } from "@/components/common/Icons";
+import Toast from "@/components/common/Toast";
 
 import { useAuth } from "@/hooks/useAuth";
 import { fetchCompanies } from "@/lib/api/companies";
@@ -16,6 +15,7 @@ import type { User } from "@/types/user";
 // 공통 모달 & 훅 import
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
+import { useToast } from "@/hooks/useToast";
 import AccessDeniedModal from "@/components/common/AccessDeniedModal";
 import { useAccessDenied } from "@/hooks/useAccessDenied";
 import { hasPermission } from "@/lib/auth";
@@ -102,16 +102,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
     const [permLoading, setPermLoading] = useState(false);
     const [permSaving, setPermSaving] = useState(false);
 
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | null; isExiting: boolean }>({
-        message: "", type: null, isExiting: false
-    });
-
-    // --- Helpers ---
-    const showToast = (message: string, type: 'success' | 'error') => {
-        setToast({ message, type, isExiting: false });
-        setTimeout(() => setToast(prev => ({ ...prev, isExiting: true })), 2600);
-        setTimeout(() => setToast({ message: "", type: null, isExiting: false }), 3000);
-    };
+    const { toast, showToast } = useToast();
 
     // --- Effects ---
     useEffect(() => {
@@ -478,16 +469,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                 onRedirect={onAccessDenied}
             />
 
-            {toast.type && (
-                <div className="toast-container">
-                    <div className={`toast ${toast.type} ${toast.isExiting ? 'exit' : ''}`}>
-                        <div className="toast-icon-wrapper">
-                            {toast.type === 'success' ? <SuccessIcon className="toast-icon success" /> : <ErrorIcon className="toast-icon error" />}
-                        </div>
-                        {toast.message}
-                    </div>
-                </div>
-            )}
+            <Toast toast={toast} />
 
             <ConfirmModal
                 isOpen={isOpen}

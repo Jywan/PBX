@@ -36,3 +36,45 @@ export const assignUserPermissions = async (
         headers: { Authorization: `Bearer ${token}` }
     });
 };
+
+/**
+ * 권한 템플릿 생성 / 수정 (POST - 서버에서 action id 기반으로 upsert 처리)
+ */
+export const savePermissionTemplate = async (
+    token: string,
+    payload: {
+        menu_name: string;
+        menu_code: string;
+        actions: { id: number | null; name: string; code: string; is_active: boolean }[];
+    }
+): Promise<void> => {
+    await axios.post(`${API_URL}/api/v1/permissions/template`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+};
+
+/**
+ * 권한 템플릿 활성 상태 변경 (활성화 / 비활성화)
+ */
+export const updatePermissionTemplateStatus = async (
+    token: string,
+    id: number,
+    is_active: boolean
+): Promise<void> => {
+    await axios.patch(`${API_URL}/api/v1/permissions/template/${id}`,
+        { is_active },
+        { headers: { Authorization: `Bearer ${token}` } }
+    );
+};
+
+/**
+ * 권한 템플릿 비활성화 (DELETE → 소프트 삭제)
+ */
+export const deletePermissionTemplate = async (
+    token: string,
+    id: number
+): Promise<void> => {
+    await axios.delete(`${API_URL}/api/v1/permissions/template/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+};

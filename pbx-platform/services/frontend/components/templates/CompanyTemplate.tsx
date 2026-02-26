@@ -4,8 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation"; 
 
 import "@/styles/templates/company.css";
-import "@/styles/common/toast.css";
-import { SuccessIcon, ErrorIcon } from "@/components/common/Icons";
+import Toast from "@/components/common/Toast";
 
 import type { Company, CompanyFormState } from "@/types/company";
 import { useAuth } from "@/hooks/useAuth";
@@ -279,17 +278,7 @@ export default function CompanyTemplate({ onAccessDenied }: CompanyTemplateProps
 
             {!isDenied && (
                 <>
-                    {/* 토스트 코드 */}
-                    {toast.type && (
-                        <div className="toast-container">
-                            <div className={`toast ${toast.type} ${toast.isExiting ? 'exit' : ''}`}>
-                                <div className="toast-icon-wrapper">
-                                    {toast.type === 'success' ? <SuccessIcon className="toast-icon success" /> : <ErrorIcon className="toast-icon error" />}
-                                </div>
-                                {toast.message}
-                            </div>
-                        </div>
-                    )}
+                    <Toast toast={toast} />
 
                     {/* 커스텀 모달 */}
                     <ConfirmModal 

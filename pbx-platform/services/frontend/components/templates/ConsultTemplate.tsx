@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Phone, PhoneOff, Clock, User, FileText, BookOpen } from "lucide-react";
+import { formatSeconds, formatTimer } from "@/lib/utils/date";
 import "@/styles/templates/consult.css";
 
 interface WaitingCall {
@@ -60,21 +61,6 @@ const MOCK_SCRIPT = `안녕하세요, 고객님. 상담원 [이름]입니다.
 1. 제품 설치 문의  →  기술지원팀 연결 (내선 2번)
 2. 요금 및 결제    →  고객센터 연결 (내선 3번)
 3. AS / 수리 접수  →  온라인 접수 안내 또는 직접 접수 처리`;
-
-// ---- 유틸 ----
-function formatWaitTime(sec: number) {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return m > 0 ? `${m}분 ${s}초` : `${s}초`;
-}
-
-function formatCallTime(sec: number) {
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = sec % 60;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
-}
 
 
 export default function ConsultTemplate() {
@@ -139,7 +125,7 @@ export default function ConsultTemplate() {
                                     <span className="waiting-queue">{call.queueName}</span>
                                     <span className="waiting-time">
                                         <Clock size={11}/>
-                                        {formatWaitTime(call.waitSeconds)}
+                                        {formatSeconds(call.waitSeconds)}
                                     </span>
                                 </div>
                             </div>
@@ -167,7 +153,7 @@ export default function ConsultTemplate() {
                             </div>
                             <div className="call-timer">
                                 <Clock size={14} />
-                                {formatCallTime(callTimer)}
+                                {formatTimer(callTimer)}
                             </div>
                             <button className="btn-end-call" onClick={handleEndCall}>
                                 <PhoneOff size={14} />

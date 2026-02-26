@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { isSystemAdmin, hasPermission } from "@/lib/auth";
 
 export default function Sidebar({ activeMenu, setActiveMenu }: {
@@ -17,6 +17,18 @@ export default function Sidebar({ activeMenu, setActiveMenu }: {
     const canAccess = (menuCode: string) => isAdmin || hasPermission(menuCode);
 
     const [openPopup, setOpenPopup] = useState<string | null>(null);
+    const sidebarRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        if (!openPopup) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+                setOpenPopup(null);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [openPopup]);
 
     // 메인 메뉴 클릭 시 모든 팝업 닫기
     const handleMainMenuClick = (menu: string) => {
@@ -44,7 +56,7 @@ export default function Sidebar({ activeMenu, setActiveMenu }: {
     }
 
     return (
-        <aside className="layout-sidebar">
+        <aside ref={sidebarRef} className="layout-sidebar">
             {canAccess("consult") && (
                 <button className={`menu-btn ${activeMenu === "consult" ? "active" : ""}`} 
                     onClick={() => handleMainMenuClick("consult")}>상담</button>

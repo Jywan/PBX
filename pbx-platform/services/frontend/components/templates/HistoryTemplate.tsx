@@ -2,41 +2,10 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Phone, PhoneOff, Search, RotateCcw } from "lucide-react";
-import Cookies from "js-cookie";
+import { useAuth } from "@/hooks/useAuth";
 import { fetchCalls, CallRecord } from "@/lib/api/calls";
+import { formatDateTime, formatDateOnly, formatTimeOnly, calcDuration } from "@/lib/utils/date";
 import "@/styles/templates/history.css";
-
-// -- 유틸 --
-
-function formatDateTime(dt: string | null): string {
-    if (!dt) return "-";
-    const d = new Date(dt);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-
-function formatDateOnly(dt: string | null): string {
-    if (!dt) return "-";
-    const d = new Date(dt);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
-}
-
-function formatTimeOnly(dt: string | null): string {
-    if (!dt) return "-";
-    const d = new Date(dt);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-
-function calcDuration(answeredAt: string | null, endedAt: string | null): string {
-    if (!answeredAt || !endedAt) return "-";
-    const sec = Math.floor((new Date(endedAt).getTime() - new Date(answeredAt).getTime()) / 1000);
-    if (sec < 0) return "-";
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return m > 0 ? `${m}분 ${s}초` : `${s}초`;
-}
 
 const DIRECTION_MAP: Record<string, string> = {
     internal: "내선",
@@ -54,7 +23,7 @@ function directionLabel(d: string) { return DIRECTION_MAP[d] ?? d; }
 function statusLabel(s: string) { return STATIS_MAP[s] ?? s; }
 function statusClass(s: string) {
     if (s === "ended") return "status-ended";
-    if (s === "up") return
+    if (s === "up") return "status-up";
     return "status-new";
 }
 function directionClass(d: string) {
@@ -81,6 +50,7 @@ const defaultFilter: FilterState = {
 }
 
 export default function HistoryTemplate() {
+    const { token, isLoading: authLoading } = useAuth();
     const [calls, setCalls] = useState<CallRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -89,14 +59,13 @@ export default function HistoryTemplate() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
     useEffect(() => {
-        const token = Cookies.get("access_token");
-        if (!token) { setError("인증 토큰이 없습니다."); setLoading(false); return; }
+        if (authLoading || !token) return;
 
         fetchCalls(token)
             .then(data => setCalls(data))
             .catch(e => setError("데이터 로드 실패: " + (e?.message ?? "unknown")))
             .finally(() => setLoading(false));
-    }, []);
+    }, [token, authLoading]);
 
     const filtered = useMemo(() => {
         return calls.filter(c => {
@@ -233,9 +202,9 @@ export default function HistoryTemplate() {
                                             </div>
                                         </td>
                                         <td className="cell-exten">{call.caller_exten ?? "-"}</td>
-                                        <td className="cell-extem">{call.callee_exten ?? "-"}</td>
+                                        <td className="cell-exten">{call.callee_exten ?? "-"}</td>
                                         <td>
-                                            <span className={`div-badge ${directionClass(call.direction)}`}>
+                                            <span className={`dir-badge ${directionClass(call.direction)}`}>
                                                 {directionLabel(call.direction)}
                                             </span>
                                         </td>

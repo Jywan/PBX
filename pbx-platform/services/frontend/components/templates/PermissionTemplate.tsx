@@ -1,83 +1,54 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; 
-import axios from "axios";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/useToast";
+import { fetchPermissionTemplates, savePermissionTemplate, updatePermissionTemplateStatus, deletePermissionTemplate } from "@/lib/api/permissions";
 import "@/styles/templates/permissionTemplate.css";
-import "@/styles/common/toast.css";
-import { ActiveIcon, InactiveIcon, SuccessIcon, ErrorIcon } from "@/components/common/Icons";
+import Toast from "@/components/common/Toast";
+import { ActiveIcon, InactiveIcon } from "@/components/common/Icons";
 
 import ConfirmModal from "../common/ConfirmModal";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 
 export default function PermissionTemplate() {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
     const router = useRouter();
-
-    // --- Auth State ---
-    const [token, setToken] = useState<string | null>(null);
+    const { token, isLoading: authLoading } = useAuth();
 
     // --- UI State ---
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(false);
-    
+
     // --- Form State ---
     const [menuName, setMenuName] = useState("");
     const [menuCode, setMenuCode] = useState("");
     const [actions, setActions] = useState([{ id: null, name: "", code: "", is_active: true }]);
     const [isEditMode, setIsEditMode] = useState(false);
 
-    // --- Custome Modal
+    // --- Custom Modal ---
     const { isOpen, message, onConfirm, openConfirm, closeConfirm } = useConfirmModal();
 
-    const [toast, setToast] = useState<{ 
-        message: string; 
-        type: 'success' | 'error' | null; 
-        isExiting: boolean 
-    }>({ message: "", type: null, isExiting: false });
-
-    // --- Helpers ---
-    const showToast = (message: string, type: 'success' | 'error') => {
-        setToast({ message, type, isExiting: false });
-        setTimeout(() => setToast(prev => ({ ...prev, isExiting: true })), 2600);
-        setTimeout(() => setToast({ message: "", type: null, isExiting: false }), 3000);
-    };
-
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-        return null;
-    };
+    const { toast, showToast } = useToast();
 
     // --- Effects ---
     useEffect(() => {
-        const cookieToken = getCookie("access_token");
-        if (!cookieToken) {
-            router.push("/login");
-            return;
-        }
-        setToken(cookieToken);
-    }, [router]);
-
-    useEffect(() => {
-        if (token) {
+        if (!authLoading && token) {
             fetchTemplates();
         }
-    }, [token]);
+    }, [token, authLoading]);
 
     // --- API Handlers ---
 
     const fetchTemplates = async () => {
+        if (!token) return;
         setLoading(true);
         try {
-            const response = await axios.get(`${API_URL}/api/v1/permissions/templates`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setTemplates(response.data);
-        } catch (error: any) { 
-            console.error("Fetch Error:", error); 
+            const data = await fetchPermissionTemplates(token);
+            setTemplates(data);
+        } catch (error: any) {
+            console.error("Fetch Error:", error);
             if (error.response?.status === 401) {
                 router.push("/login");
             }
@@ -95,10 +66,7 @@ export default function PermissionTemplate() {
     const executeReactivate = async (id: number) => {
         if (!token) return;
         try {
-            await axios.patch(`${API_URL}/api/v1/permissions/template/${id}`,
-                { is_active: true },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await updatePermissionTemplateStatus(token, id, true);
             showToast("정상적으로 활성화 되었습니다.", "success");
             fetchTemplates();
         } catch (err: any) {
@@ -117,13 +85,11 @@ export default function PermissionTemplate() {
     const executeDelete = async (id: number) => {
         if (!token) return;
         try {
-            await axios.delete(`${API_URL}/api/v1/permissions/template/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await deletePermissionTemplate(token, id);
             showToast("비활성화 처리가 완료되었습니다.", "success");
             fetchTemplates();
-        } catch (error: any) { 
-            showToast("처리에 실패했습니다.", "error"); 
+        } catch (error: any) {
+            showToast("처리에 실패했습니다.", "error");
         }
     };
 
@@ -145,15 +111,13 @@ export default function PermissionTemplate() {
                     }))
             };
 
-            await axios.post(`${API_URL}/api/v1/permissions/template`, payload, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            showToast("DB에 성공적으로 반영되었습니다.", "success"); 
-            setIsDrawerOpen(false); 
+            await savePermissionTemplate(token, payload);
+
+            showToast("DB에 성공적으로 반영되었습니다.", "success");
+            setIsDrawerOpen(false);
             fetchTemplates();
-        } catch (error: any) { 
-            showToast("저장 중 오류가 발생했습니다.", "error"); 
+        } catch (error: any) {
+            showToast("저장 중 오류가 발생했습니다.", "error");
         }
     };
 
@@ -193,19 +157,7 @@ export default function PermissionTemplate() {
 
     return (
         <div className="perm-container">
-            {toast.type && (
-                <div className="toast-container">
-                    <div className={`toast ${toast.type} ${toast.isExiting ? 'exit' : ''}`}>
-                        <div className="toast-icon-wrapper">
-                            {toast.type === 'success' ? 
-                                <SuccessIcon className="toast-icon success" /> : 
-                                <ErrorIcon className="toast-icon error" />
-                            }
-                        </div>
-                        {toast.message}
-                    </div>
-                </div>
-            )}
+            <Toast toast={toast} />
 
             <ConfirmModal 
                 isOpen={isOpen}
