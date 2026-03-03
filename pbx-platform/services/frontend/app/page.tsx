@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { useAuth } from "@/hooks/useAuth";
+import { logout as logoutApi } from "@/lib/api/auth";
 
 // 레이아웃
 import Sidebar from "@/components/layout/Sidebar";
@@ -24,53 +26,34 @@ import "@/styles/dashboard.css";
 import "@/styles/webrtc.css";
 
 export default function HomePage() {
-  const { permissions, expiresAt, resetAuth } = useAuthStore();
+  const { expiresAt, resetAuth } = useAuthStore();
+  const { token } = useAuth();
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const checkAuthExpiry = () => {
-      const now = Date.now();
-      const token = Cookies.get("access_token");
-
-      // 토큰이 이미 사라졌거나 스토어에 기록된 만료 시간이 지났다면...
-      if (!token || (expiresAt && now > expiresAt)) {
-        console.warn("인증이 만료되었습니다. 클라이언트 정보를 초기화합니다.");
+      if (expiresAt && Date.now() > expiresAt) {
+        console.warn("인증이 만료 되었습니다. 클라이언트 정보를 초기화합니다.");
         resetAuth();
         Cookies.remove("access_token");
         router.push("/login");
       }
     };
-
+  
     checkAuthExpiry();
-    
     // 1분 마다 체크
     const interval = setInterval(checkAuthExpiry, 60000);
     return () => clearInterval(interval);
   }, [expiresAt, resetAuth, router]);
 
   const handleLogout = async () => {
-    const token = Cookies.get("access_token");
-    
-    try {
-      // 1. 서버 호출 
-      const response = await fetch(`${API_URL}/api/v1/auth/logout`, {
-        method: "POST",
-        headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json" 
-        }
-      });
-
-      if (!response.ok) {
-          const errorData = await response.json();
-          console.error("서버 로그아웃 처리 실패:", errorData);
+    if (token) {
+      try {
+        await logoutApi(token);
+      } catch (e) {
+        console.error("서버 로그아웃 처리 실패:", e);
       }
-    } catch (e) {
-      console.error("네트워크 오류:", e);
     }
-
-    // 2. 클라이언트 정리
     resetAuth();
     Cookies.remove("access_token");
     router.push("/login");
@@ -98,14 +81,11 @@ export default function HomePage() {
   return (
     <div className="layout-container">
       <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu}/>
-      
       <div className="layout-content-wrapper">
         <Header onLogout={handleLogout}/>
-        
         <MainContent>
             {renderTemplate()}
         </MainContent>
-
         <Footer />
       </div>
     </div>

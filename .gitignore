@@ -22,3 +22,7 @@ Dockerfile
 node_modules/
 .next/
 dist/
+
+#CLAUDE
+CLAUDE.md
+.claude

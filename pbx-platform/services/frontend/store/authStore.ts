@@ -20,11 +20,10 @@ export const useAuthStore = create<AuthState>()(
                 // 10시간 뒤의 타임스탬프 계산 (10시간 * 60분 * 60초 * 1000ms)
                 const tenHoursInMs = 10 * 60 * 60 * 1000;
                 const expiry = Date.now() + tenHoursInMs;
-                
                 set({ permissions: perms, expiresAt: expiry });
             },
             setActivity: (activity) => set({ activity }),
-            resetAuth: () => set({ permissions: [] }),
+            resetAuth: () => set({ permissions: [], expiresAt: null, activity: "DISABLED" }),
         }),
         {
             name: 'user-permission-storage', // localStorage 키 이름

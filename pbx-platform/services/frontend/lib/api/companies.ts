@@ -1,7 +1,6 @@
 import axios from "axios";
+import { API_URL } from "@/lib/config";
 import type { Company, CompanyCreateRequest, CompanyUpdateRequest } from "@/types/company";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /**
  * 업체 목록 조회
