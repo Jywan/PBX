@@ -1,5 +1,6 @@
 "use client";
 
+import "@/styles/templates/userPermission.css";
 import type { User } from "@/types/user";
 
 interface Props {
@@ -24,14 +25,14 @@ export default function UserPermissionModal({
     if (!isOpen) return null;
 
     return (
-        <div className="user-modal-overlay">
-            <div className="user-modal-content user-perm-modal">
-                <div className="user-modal-header">
-                    <h3 className="user-modal-title">🔑 '{targetUser?.name}' 권한 설정</h3>
-                    <button onClick={onClose} className="user-modal-close-btn">✕</button>
+        <div className="perm-modal-overlay">
+            <div className="perm-modal-content">
+                <div className="perm-modal-header">
+                    <h3 className="perm-modal-title">🔑 '{targetUser?.name}' 권한 설정</h3>
+                    <button onClick={onClose} className="perm-modal-close-btn">✕</button>
                 </div>
 
-                <div className="user-modal-body">
+                <div className="perm-modal-body">
                     {permLoading ? (
                         <div className="user-perm-loading">권한 정보 로딩 중...</div>
                     ) : permTemplates.filter(m => m.is_active).length === 0 ? (
@@ -79,10 +80,10 @@ export default function UserPermissionModal({
                     )}
                 </div>
 
-                <div className="user-modal-footer">
-                    <button onClick={onClose} disabled={permSaving} className="user-modal-cancel-btn">취소</button>
+                <div className="perm-modal-footer">
+                    <button onClick={onClose} disabled={permSaving} className="perm-modal-cancel-btn">취소</button>
                     {canUpsertPermission && (
-                        <button onClick={onSave} disabled={permSaving || permLoading} className="user-modal-save-btn">
+                        <button onClick={onSave} disabled={permSaving || permLoading} className="perm-modal-save-btn">
                             {permSaving ? '저장 중...' : '✓ 권한 저장'}
                         </button>
                     )}

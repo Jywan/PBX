@@ -1,0 +1,244 @@
+/* ========== 권한 설정 모달 전용 스타일 ========== */
+
+.perm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: permModalFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes permModalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes permModalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.perm-modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    width: 90%;
+    max-width: 560px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: permModalSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.perm-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f3f4f6;
+    flex-shrink: 0;
+}
+
+.perm-modal-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.perm-modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #9ca3af;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.perm-modal-close-btn:hover {
+    color: #6b7280;
+}
+
+.perm-modal-body {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.perm-modal-footer {
+    margin-top: 24px;
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.perm-modal-cancel-btn {
+    flex: 1;
+    padding: 12px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.perm-modal-cancel-btn:hover:not(:disabled) {
+    background: #e5e7eb;
+}
+
+.perm-modal-cancel-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.perm-modal-save-btn {
+    flex: 2;
+    padding: 12px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.perm-modal-save-btn:hover:not(:disabled) {
+    background: #2563eb;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -1px rgba(37, 99, 235, 0.1);
+    transform: translateY(-1px);
+}
+
+.perm-modal-save-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+.perm-modal-save-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* ========== 권한 목록 내부 ========== */
+
+.user-perm-loading,
+.user-perm-empty {
+    padding: 40px 0;
+    text-align: center;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.user-perm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.user-perm-menu-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.user-perm-menu-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.user-perm-menu-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.user-perm-menu-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.user-perm-menu-code {
+    font-size: 12px;
+    font-family: monospace;
+    color: #3b82f6;
+    background: #eff6ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.user-perm-actions {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.user-perm-action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.user-perm-action-item:hover {
+    background: #f3f4f6;
+}
+
+.user-perm-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.user-perm-action-name {
+    font-size: 13px;
+    color: #374151;
+    flex: 1;
+}
+
+.user-perm-action-name.disabled {
+    color: #c4c9d1;
+}
+
+.user-perm-action-code {
+    font-size: 11px;
+    font-family: monospace;
+    color: #9ca3af;
+}
+
+.user-perm-no-actions {
+    font-size: 13px;
+    color: #9ca3af;
+    text-align: center;
+    padding: 8px 0;
+    margin: 0;
+}

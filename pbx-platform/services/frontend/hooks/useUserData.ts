@@ -128,7 +128,7 @@ export function useUserData({ token, isSystemAdmin, companyId, authLoading, show
             if (e.response?.data) {
                 const errorData = e.response.data;
                 if (Array.isArray(errorData.detail)) {
-                    errorMessage = errorData.datail
+                    errorMessage = errorData.detail
                         .map((err: any) => (err.msg || err.message || "").replace(/^Value error,\s*/, ""))
                         .join(", ");
                 } else if (typeof errorData.detail === "string") {

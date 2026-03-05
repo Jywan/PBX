@@ -11,6 +11,7 @@ from pbx_common.models import User, Permission, UserPermission, UserStatusLog, U
 from pbx_common.utils.security import verify_password, create_access_token
 from app.db.session import get_db
 from app.schemas.user import LoginRequest, Token, ActivityUpdate
+from app.deps import get_current_user
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -216,3 +217,18 @@ async def update_activity(activity_data: ActivityUpdate, request: Request, db: A
 
     await db.commit()
     return {"activity": new_activity.value}
+
+@router.get("/me/permissions")
+async def get_my_permissions(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    perm_result = await db.execute(
+        select(Permission.code)
+        .join(UserPermission, UserPermission.permission_id == Permission.id)
+        .where(
+            UserPermission.user_id == current_user.id,
+            UserPermission.is_active == True
+        )
+    )
+    return {"permissions": perm_result.scalars().all()}

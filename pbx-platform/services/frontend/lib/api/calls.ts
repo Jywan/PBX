@@ -1,4 +1,4 @@
-import axios from "axios";
+import apiClient from "./client";
 import { API_URL } from "@/lib/config";
 import { CallRecord } from "@/types/call";
 
@@ -9,7 +9,7 @@ export const fetchCalls = async (
     skip: number = 0,
     limit: number = 500
 ): Promise<CallRecord[]> => {
-    const response = await axios.get<CallRecord[]>(`${API_URL}/api/v1/calls/`, {
+    const response = await apiClient.get<CallRecord[]>(`${API_URL}/api/v1/calls/`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { skip, limit }
     });

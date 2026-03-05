@@ -1,11 +1,11 @@
-import axios from "axios";
+import apiClient from "./client";
 import { API_URL } from "@/lib/config";
 
 /**
  * 권한 템플릿 목록 조회 (메뉴 + 하위 액션)
  */
 export const fetchPermissionTemplates = async (token: string) => {
-    const response = await axios.get(`${API_URL}/api/v1/permissions/templates`, {
+    const response = await apiClient.get(`${API_URL}/api/v1/permissions/templates`, {
         headers: { Authorization: `Bearer ${token}` }
     });
     return response.data;
@@ -18,7 +18,7 @@ export const fetchUserPermissions = async (
     token: string,
     userId: number
 ): Promise<number[]> => {
-    const response = await axios.get(`${API_URL}/api/v1/users/${userId}/permissions`, {
+    const response = await apiClient.get(`${API_URL}/api/v1/users/${userId}/permissions`, {
         headers: { Authorization: `Bearer ${token}` }
     });
     return response.data.permission_ids;
@@ -31,7 +31,7 @@ export const assignUserPermissions = async (
     token: string,
     data: { user_id: number; menu_id: number; permission_ids: number[] }
 ): Promise<void> => {
-    await axios.post(`${API_URL}/api/v1/permissions/assign`, data, {
+    await apiClient.post(`${API_URL}/api/v1/permissions/assign`, data, {
         headers: { Authorization: `Bearer ${token}` }
     });
 };
@@ -47,7 +47,7 @@ export const savePermissionTemplate = async (
         actions: { id: number | null; name: string; code: string; is_active: boolean }[];
     }
 ): Promise<void> => {
-    await axios.post(`${API_URL}/api/v1/permissions/template`, payload, {
+    await apiClient.post(`${API_URL}/api/v1/permissions/template`, payload, {
         headers: { Authorization: `Bearer ${token}` }
     });
 };
@@ -60,7 +60,7 @@ export const updatePermissionTemplateStatus = async (
     id: number,
     is_active: boolean
 ): Promise<void> => {
-    await axios.patch(`${API_URL}/api/v1/permissions/template/${id}`,
+    await apiClient.patch(`${API_URL}/api/v1/permissions/template/${id}`,
         { is_active },
         { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -73,7 +73,7 @@ export const deletePermissionTemplate = async (
     token: string,
     id: number
 ): Promise<void> => {
-    await axios.delete(`${API_URL}/api/v1/permissions/template/${id}`, {
+    await apiClient.delete(`${API_URL}/api/v1/permissions/template/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
 };

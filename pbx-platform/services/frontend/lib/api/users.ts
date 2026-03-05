@@ -1,4 +1,4 @@
-import axios from "axios";
+import apiClient from "./client";
 import { API_URL } from "@/lib/config";
 import type { User, UserCreateRequest, UserUpdateRequest } from "@/types/user";
 
@@ -16,7 +16,7 @@ export const fetchUsers = async (
         params.company_id = companyId;
     }
 
-    const response = await axios.get<User[]>(`${API_URL}/api/v1/users`, {
+    const response = await apiClient.get<User[]>(`${API_URL}/api/v1/users`, {
         headers: { Authorization: `Bearer ${token}` },
         params
     });
@@ -30,7 +30,7 @@ export const createUser = async (
     token: string,
     data: UserCreateRequest
 ): Promise<User> => {
-    const response = await axios.post<User>(`${API_URL}/api/v1/users`, data, {
+    const response = await apiClient.post<User>(`${API_URL}/api/v1/users`, data, {
         headers: { Authorization: `Bearer ${token}` }
     });
     return response.data;
@@ -44,7 +44,7 @@ export const updateUser = async (
     id: number,
     data: UserUpdateRequest
 ): Promise<User> => {
-    const response = await axios.patch<User>(`${API_URL}/api/v1/users/${id}`, data, {
+    const response = await apiClient.patch<User>(`${API_URL}/api/v1/users/${id}`, data, {
         headers: { Authorization: `Bearer ${token}` }
     });
     return response.data;
@@ -57,7 +57,7 @@ export const deleteUser = async (
     token: string,
     id: number
 ): Promise<void> => {
-    await axios.delete(`${API_URL}/api/v1/users/${id}`, {
+    await apiClient.delete(`${API_URL}/api/v1/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
 };
@@ -69,7 +69,7 @@ export const restoreUser = async (
     token: string,
     id: number
 ): Promise<User> => {
-    const response = await axios.patch<User>(`${API_URL}/api/v1/users/${id}/restore`, {}, {
+    const response = await apiClient.patch<User>(`${API_URL}/api/v1/users/${id}/restore`, {}, {
         headers: { Authorization: `Bearer ${token}` }
     });
     return response.data;

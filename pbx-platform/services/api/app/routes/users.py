@@ -25,7 +25,7 @@ async def create_user(
     # API 필드(username) -> DB 필드(account) 매핑
     q_account = select(User).where(User.account == user_in.username)
     if (await db.execute(q_account)).scalars().first():
-        raise HTTPException(status_code=400, detail="이미 존재하는 계정입니다.")
+        raise HTTPException(status_code=400, detail="존재하는 계정ID입니다. 다른 계정ID를 사용해주세요.")
 
     company = await db.get(Company, user_in.company_id)
     if not company:
@@ -122,7 +122,7 @@ async def update_user(
         q_account = select(User).where(User.account == user_in.username)
         existing_user = (await db.execute(q_account)).scalars().first()
         if existing_user:
-            raise HTTPException(status_code=400, detail="이미 존재하는 계정입니다.")
+            raise HTTPException(status_code=400, detail="존재하는 계정ID입니다. 다른 계정ID를 사용해주세요.")
         user.account = user_in.username
 
     # 비밀번호 업데이트 (선택 사항)

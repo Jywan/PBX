@@ -1,4 +1,4 @@
-import axios from "axios";
+import apiClient from "./client";
 import { API_URL } from "@/lib/config";
 import type { Company, CompanyCreateRequest, CompanyUpdateRequest } from "@/types/company";
 
@@ -6,7 +6,7 @@ import type { Company, CompanyCreateRequest, CompanyUpdateRequest } from "@/type
  * 업체 목록 조회
  */
 export const fetchCompanies = async (token: string): Promise<Company[]> => {
-    const response = await axios.get<Company[]>(`${API_URL}/api/v1/companies`, {
+    const response = await apiClient.get<Company[]>(`${API_URL}/api/v1/companies`, {
         headers: { Authorization: `Bearer ${token}` }
     });
     return response.data;
@@ -20,7 +20,7 @@ export const createCompany = async (
     token: string,
     data: CompanyCreateRequest
 ): Promise<Company> => {
-    const response = await axios.post<Company>(`${API_URL}/api/v1/companies`, data, {
+    const response = await apiClient.post<Company>(`${API_URL}/api/v1/companies`, data, {
         headers: { Authorization: `Bearer ${token}` }
     });
     return response.data;
@@ -34,7 +34,7 @@ export const updateCompany = async (
     id: number,
     data: CompanyUpdateRequest
 ): Promise<Company> => {
-    const response = await axios.patch<Company>(`${API_URL}/api/v1/companies/${id}`, data, {
+    const response = await apiClient.patch<Company>(`${API_URL}/api/v1/companies/${id}`, data, {
         headers: { Authorization: `Bearer ${token}` }
     });
     return response.data;
@@ -47,7 +47,7 @@ export const deactivateCompany = async (
     token: string,
     id: number
 ): Promise<Company> => {
-    const response = await axios.patch<Company>(`${API_URL}/api/v1/companies/${id}`, 
+    const response = await apiClient.patch<Company>(`${API_URL}/api/v1/companies/${id}`, 
         { active: false },
         { headers: { Authorization: `Bearer ${token}` } }
     );
