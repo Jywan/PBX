@@ -8,7 +8,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from app.core.config import get_settings
-from app.routes import calls, users, companies, signaling, permissions, auth
+from app.routes import calls, users, companies, signaling, permissions, auth, customer
 
 # 설정 로드
 settings = get_settings()
@@ -73,6 +73,7 @@ def create_application() -> FastAPI:
     application.include_router(companies.router)
     application.include_router(permissions.router)
     application.include_router(auth.router)
+    application.include_router(customer.router)
 
     # WebSocket 라우터
     application.include_router(signaling.router)
