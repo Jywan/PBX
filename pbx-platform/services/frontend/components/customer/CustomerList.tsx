@@ -2,14 +2,15 @@
 
 import { Search, Plus, Phone, User, Trash2 } from "lucide-react";
 import { formatDateOnly } from "@/lib/utils/date";
+import { formatPhoneNumber } from "@/lib/utils/validation";
 import type { Customer } from "@/types/customer";
 
 interface CustomerListProps {
     filtered: Customer[];
-    selectedId: string | null;
+    selectedId: number | null;
     search: string;
     onSearchChange: (v: string) => void;
-    onSelect: (id: string) => void;
+    onSelect: (id: number) => void;
     onDelete: () => void;
     onAddOpen: () => void;
     getGroupLabel: (id: string) => string;
@@ -76,10 +77,10 @@ export default function CustomerList({
                                     <td>
                                         <span className="cell-phone">
                                             <Phone size={11} className="cell-phone-icon" />
-                                            {c.phone}
+                                            {formatPhoneNumber(c.phone)}
                                         </span>
                                     </td>
-                                    <td className="cell-company">{c.company || "-"}</td>
+                                    <td className="cell-company">{c.company_name || "-"}</td>
                                     <td>
                                         <span
                                             className="group-badge"
@@ -88,7 +89,7 @@ export default function CustomerList({
                                             {getGroupLabel(c.group)}
                                         </span>
                                     </td>
-                                    <td className="cell-date">{formatDateOnly(c.lastCallAt)}</td>
+                                    <td className="cell-date">{formatDateOnly(c.last_call_at)}</td>
                                     <td className="cell-actions" onClick={e => e.stopPropagation()}>
                                         <button className="btn-icon" title="삭제" onClick={onDelete}>
                                             <Trash2 size={13} />

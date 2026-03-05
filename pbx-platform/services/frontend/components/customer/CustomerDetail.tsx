@@ -3,13 +3,16 @@
 import { Dispatch, SetStateAction } from "react";
 import { User, Edit3, Check, X } from "lucide-react";
 import { formatDateTime } from "@/lib/utils/date";
+import { formatPhoneNumber } from "@/lib/utils/validation";
 import type { Customer, CustomerGroup, CallHistory } from "@/types/customer";
+import type { Company } from "@/types/company";
 
 interface CustomerDetailProps {
     selectedCustomer: Customer | null;
     editMode: boolean;
     editForm: Partial<Customer>;
     groups: CustomerGroup[];
+    companies: Company[];
     calls: CallHistory[];
     setEditForm: Dispatch<SetStateAction<Partial<Customer>>>;
     onEditStart: () => void;
@@ -17,6 +20,7 @@ interface CustomerDetailProps {
     onEditSave: () => void;
     getGroupLabel: (id: string) => string;
     getGroupColor: (id: string) => string;
+    isSystemAdmin: boolean;
 }
 
 function DetailField({ label, value, editMode, onChange }: {
@@ -38,9 +42,9 @@ function DetailField({ label, value, editMode, onChange }: {
 }
 
 export default function CustomerDetail({
-    selectedCustomer, editMode, editForm, groups, calls,
+    selectedCustomer, editMode, editForm, groups, companies, calls,
     setEditForm, onEditStart, onEditCancel, onEditSave,
-    getGroupLabel, getGroupColor,
+    getGroupLabel, getGroupColor, isSystemAdmin,
 }: CustomerDetailProps) {
     if (!selectedCustomer) {
         return (
@@ -84,18 +88,44 @@ export default function CustomerDetail({
             </div>
 
             <div className="detail-fields">
-                <DetailField label="전화번호" value={editMode ? editForm.phone ?? "" : selectedCustomer.phone}
-                    editMode={editMode} onChange={v => setEditForm(p => ({ ...p, phone: v }))} />
-                <DetailField label="이메일" value={editMode ? editForm.email ?? "" : selectedCustomer.email}
-                    editMode={editMode} onChange={v => setEditForm(p => ({ ...p, email: v }))} />
-                <DetailField label="회사" value={editMode ? editForm.company ?? "" : selectedCustomer.company}
-                    editMode={editMode} onChange={v => setEditForm(p => ({ ...p, company: v }))} />
+                <DetailField
+                    label="전화번호"
+                    value={editMode ? editForm.phone ?? "" : formatPhoneNumber(selectedCustomer.phone)}
+                    editMode={editMode}
+                    onChange={v => setEditForm(p => ({ ...p, phone: formatPhoneNumber(v) }))}
+                />
+                <DetailField
+                    label="이메일"
+                    value={editMode ? editForm.email ?? "" : selectedCustomer.email ?? ""}
+                    editMode={editMode}
+                    onChange={v => setEditForm(p => ({ ...p, email: v }))}
+                />
+                <div className="detail-field-row">
+                    <span className="detail-field-label">회사</span>
+                    {editMode ? (
+                        <select
+                            className="detail-field-select"
+                            value={editForm.company_id ?? ""}
+                            onChange={e => setEditForm(p => ({ ...p, company_id: e.target.value ? Number(e.target.value) : null }))}
+                            disabled={!isSystemAdmin}
+                        >
+                            <option value="">선택 안함</option>
+                            {companies.filter(c => c.active).map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    ) : (
+                        <span className="detail-field-value">{selectedCustomer.company_name || "-"}</span>
+                    )}
+                </div>
                 {editMode && (
                     <div className="detail-field-row">
                         <span className="detail-field-label">그룹</span>
-                        <select className="detail-field-select"
+                        <select
+                            className="detail-field-select"
                             value={editForm.group ?? "normal"}
-                            onChange={e => setEditForm(p => ({ ...p, group: e.target.value }))}>
+                            onChange={e => setEditForm(p => ({ ...p, group: e.target.value }))}
+                        >
                             {groups.filter(g => g.id !== "all").map(g => (
                                 <option key={g.id} value={g.id}>{g.label}</option>
                             ))}
@@ -105,7 +135,8 @@ export default function CustomerDetail({
                 <div className="detail-field-row detail-field-memo">
                     <span className="detail-field-label">메모</span>
                     {editMode ? (
-                        <textarea className="detail-field-textarea"
+                        <textarea
+                            className="detail-field-textarea"
                             value={editForm.memo ?? ""}
                             onChange={e => setEditForm(p => ({ ...p, memo: e.target.value }))}
                             rows={3}
@@ -116,7 +147,7 @@ export default function CustomerDetail({
                 </div>
                 <div className="detail-field-row">
                     <span className="detail-field-label">등록일</span>
-                    <span className="detail-field-value">{selectedCustomer.createdAt}</span>
+                    <span className="detail-field-value">{selectedCustomer.created_at}</span>
                 </div>
             </div>
 

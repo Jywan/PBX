@@ -1,146 +1,179 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { fetchCustomers, createCustomer, updateCustomer, deleteCustomer } from "@/lib/api/customers";
+import { fetchCompanies } from "@/lib/api/companies";
+import { useConfirmModal } from "@/hooks/useConfirmModal";
 import type { Customer, CustomerGroup, CallHistory } from "@/types/customer";
+import type { Company } from "@/types/company";
 
-export const GROUPS: CustomerGroup[] = [
+const GROUPS: CustomerGroup[] = [
     { id: "all",       label: "전체",      color: "#6b7280" },
     { id: "vip",       label: "VIP",       color: "#f59e0b" },
     { id: "normal",    label: "일반",      color: "#3b82f6" },
     { id: "blacklist", label: "블랙리스트", color: "#ef4444" },
 ];
 
-export const MOCK_CALLS: CallHistory[] = [
-    { id: "1", date: "2026-02-20T10:30:00", direction: "inbound",  duration: "5분 23초" },
-    { id: "2", date: "2026-02-15T14:20:00", direction: "outbound", duration: "2분 10초" },
-    { id: "3", date: "2026-02-10T09:00:00", direction: "inbound",  duration: "0초"      },
-];
+const MOCK_CALLS: CallHistory[] = [];
 
-const MOCK_CUSTOMERS: Customer[] = [
-    { id: "1", name: "김민수", phone: "010-1234-5678", email: "minsu@example.com",  company: "테스트 주식회사", group: "vip",       memo: "VIP 우대 고객",         createdAt: "2025-01-15", lastCallAt: "2026-02-20T10:30:00" },
-    { id: "2", name: "이영희", phone: "010-9876-5432", email: "young@gmail.com",    company: "서울 컨설팅",    group: "normal",    memo: "",                     createdAt: "2025-03-22", lastCallAt: "2026-02-18T14:20:00" },
-    { id: "3", name: "박철수", phone: "02-1234-5678",  email: "chul@company.co.kr", company: "글로벌 무역",    group: "normal",    memo: "정기 AS 고객",          createdAt: "2025-05-10", lastCallAt: "2026-01-30T09:15:00" },
-    { id: "4", name: "최수진", phone: "010-5555-7777", email: "sujin@example.com",  company: "스마트 솔루션",  group: "vip",       memo: "월 평균 통화 30회 이상", createdAt: "2024-11-05", lastCallAt: "2026-02-25T16:45:00" },
-    { id: "5", name: "정대한", phone: "031-888-9999",  email: "",                   company: "",               group: "blacklist", memo: "스팸 발신 이력",        createdAt: "2026-01-08", lastCallAt: "2026-02-10T11:00:00" },
-    { id: "6", name: "윤미래", phone: "010-2222-3333", email: "mirae@tech.com",     company: "미래 기술",      group: "normal",    memo: "",                     createdAt: "2025-08-20", lastCallAt: "2026-02-22T13:30:00" },
-    { id: "7", name: "강동원", phone: "010-4444-8888", email: "dongwon@biz.com",    company: "강동 물산",      group: "vip",       memo: "기업 계약 고객",        createdAt: "2024-09-12", lastCallAt: "2026-02-24T10:00:00" },
-];
+const EMPTY_FORM: Partial<Customer> = {
+    name: "", phone: "", email: null, company_id: null, group: "normal", memo: null,
+};
 
-const DEFAULT_NEW: Partial<Customer> = { name: "", phone: "", email: "", company: "", group: "normal", memo: "" };
+type Params = {
+    token: string | null;
+    showToast: (message: string, type: "success" | "error") => void;
+    isSystemAdmin: boolean;
+    companyId: number | null;
+};
 
-export function useCustomerData() {
-    const [customers, setCustomers] = useState<Customer[]>(MOCK_CUSTOMERS);
+export function useCustomerData({ token, showToast, isSystemAdmin, companyId }: Params) {
+    const { isOpen: confirmOpen, message: confirmMessage, onConfirm, openConfirm, closeConfirm } = useConfirmModal();
+
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [selectedId, setSelectedId] = useState<number | null>(null);
     const [selectedGroup, setSelectedGroup] = useState("all");
     const [search, setSearch] = useState("");
-    const [selectedId, setSelectedId] = useState<string | null>(null);
+
     const [editMode, setEditMode] = useState(false);
     const [editForm, setEditForm] = useState<Partial<Customer>>({});
+
     const [showAddModal, setShowAddModal] = useState(false);
-    const [newForm, setNewForm] = useState<Partial<Customer>>(DEFAULT_NEW);
+    const [newForm, setNewForm] = useState<Partial<Customer>>(EMPTY_FORM);
+
+    const selectedCustomer = customers.find(c => c.id === selectedId) ?? null;
 
     const groupCounts = useMemo(() => {
         const counts: Record<string, number> = { all: customers.length };
-        customers.forEach(c => { counts[c.group] = (counts[c.group] || 0) + 1; });
+        for (const c of customers) {
+            counts[c.group] = (counts[c.group] ?? 0) + 1;
+        }
         return counts;
     }, [customers]);
 
     const filtered = useMemo(() => {
-        return customers.filter(c => {
-            if (selectedGroup !== "all" && c.group !== selectedGroup) return false;
-            if (search) {
-                const q = search.toLowerCase();
-                if (
-                    !c.name.toLowerCase().includes(q) &&
-                    !c.phone.toLowerCase().includes(q) &&
-                    !c.company.toLowerCase().includes(q)
-                ) return false;
-            }
-            return true;
-        });
+        let result = customers;
+        if (selectedGroup !== "all") result = result.filter(c => c.group === selectedGroup);
+        if (search.trim()) {
+            const q = search.toLowerCase();
+            result = result.filter(c =>
+                c.name.toLowerCase().includes(q) ||
+                c.phone.includes(q) ||
+                (c.company_name && c.company_name.toLowerCase().includes(q))
+            );
+        }
+        return result;
     }, [customers, selectedGroup, search]);
 
-    const selectedCustomer = customers.find(c => c.id === selectedId) ?? null;
+    const loadCustomers = async () => {
+        if (!token) return;
+        try {
+            setCustomers(await fetchCustomers(token));
+        } catch {
+            showToast("고객 데이터 로딩 실패", "error");
+        }
+    };
+
+    const loadCompanies = async () => {
+        if (!token) return;
+        try {
+            setCompanies(await fetchCompanies(token));
+        } catch { /* 드롭다운 빈 목록으로 유지 */ }
+    };
+
+    useEffect(() => {
+        loadCustomers();
+        loadCompanies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token]);
 
     const getGroupLabel = (id: string) => GROUPS.find(g => g.id === id)?.label ?? id;
     const getGroupColor = (id: string) => GROUPS.find(g => g.id === id)?.color ?? "#6b7280";
 
-    function handleSelectGroup(id: string) {
-        setSelectedGroup(id);
-        setSelectedId(null);
-    }
+    const handleSelectGroup = (id: string) => { setSelectedGroup(id); setSelectedId(null); };
+    const handleSelect = (id: number) => { setSelectedId(id); setEditMode(false); };
 
-    function handleSelect(id: string) {
-        setSelectedId(id);
-        setEditMode(false);
-    }
-
-    function handleEditStart() {
+    const handleEditStart = () => {
         if (!selectedCustomer) return;
         setEditForm({ ...selectedCustomer });
         setEditMode(true);
-    }
+    };
 
-    function handleEditCancel() {
-        setEditMode(false);
-        setEditForm({});
-    }
+    const handleEditCancel = () => { setEditMode(false); setEditForm({}); };
 
-    function handleEditSave() {
-        if (!selectedCustomer) return;
-        setCustomers(prev =>
-            prev.map(c => c.id === selectedCustomer.id ? { ...c, ...editForm } as Customer : c)
-        );
-        setEditMode(false);
-        setEditForm({});
-    }
+    const handleEditSave = async () => {
+        if (!selectedCustomer || !token) return;
+        try {
+            await updateCustomer(token, selectedCustomer.id, {
+                name: editForm.name,
+                phone: editForm.phone ? editForm.phone.replace(/-/g, "") : undefined,
+                email: editForm.email ?? undefined,
+                company_id: editForm.company_id ?? undefined,
+                group: editForm.group,
+                memo: editForm.memo ?? undefined,
+            });
+            showToast("저장되었습니다.", "success");
+            setEditMode(false);
+            await loadCustomers();
+        } catch {
+            showToast("저장 실패", "error");
+        }
+    };
 
-    function handleDelete() {
-        if (!selectedCustomer) return;
-        setCustomers(prev => prev.filter(c => c.id !== selectedCustomer.id));
-        setSelectedId(null);
-    }
+    const handleDelete = () => {
+        if (!selectedCustomer || !token) return;
+        openConfirm(`${selectedCustomer.name} 고객을 삭제하시겠습니까?`, async () => {
+            try {
+                await deleteCustomer(token, selectedCustomer.id);
+                showToast("삭제되었습니다.", "success");
+                setSelectedId(null);
+                await loadCustomers();
+            } catch {
+                showToast("삭제 실패", "error");
+            }
+        });
+    };
 
-    function handleAddOpen() {
-        setNewForm(DEFAULT_NEW);
+    const handleAddOpen = () => {
+        setNewForm(isSystemAdmin ? EMPTY_FORM : { ...EMPTY_FORM, company_id: companyId });
         setShowAddModal(true);
-    }
+    };
 
-    function handleAddSave() {
-        if (!newForm.name || !newForm.phone) return;
-        const id = String(Date.now());
-        setCustomers(prev => [...prev, {
-            id,
-            name: newForm.name!,
-            phone: newForm.phone!,
-            email: newForm.email ?? "",
-            company: newForm.company ?? "",
-            group: newForm.group ?? "normal",
-            memo: newForm.memo ?? "",
-            createdAt: new Date().toISOString().slice(0, 10),
-            lastCallAt: null,
-        }]);
-        setShowAddModal(false);
-    }
+    const handleAddSave = async () => {
+        if (!newForm.name || !newForm.phone) {
+            showToast("이름과 전화번호는 필수입니다.", "error");
+            return;
+        }
+        if (!token) return;
+        try {
+            await createCustomer(token, {
+                name: newForm.name,
+                phone: newForm.phone.replace(/-/g, ""),
+                email: newForm.email ?? undefined,
+                company_id: newForm.company_id ?? undefined,
+                group: newForm.group,
+                memo: newForm.memo ?? undefined,
+            });
+            showToast("고객이 추가되었습니다.", "success");
+            setShowAddModal(false);
+            await loadCustomers();
+        } catch {
+            showToast("추가 실패", "error");
+        }
+    };
 
     return {
-        GROUPS,
-        MOCK_CALLS,
-        groupCounts,
-        filtered,
-        selectedCustomer,
-        selectedId,
-        selectedGroup,
-        search, setSearch,
-        editMode,
-        editForm, setEditForm,
+        GROUPS, MOCK_CALLS, companies, isSystemAdmin,
+        groupCounts, filtered, selectedCustomer, selectedId,
+        selectedGroup, search, setSearch,
+        editMode, editForm, setEditForm,
         showAddModal, setShowAddModal,
         newForm, setNewForm,
-        getGroupLabel,
-        getGroupColor,
-        handleSelectGroup,
-        handleSelect,
+        getGroupLabel, getGroupColor,
+        handleSelectGroup, handleSelect,
         handleEditStart, handleEditCancel, handleEditSave,
-        handleDelete,
-        handleAddOpen, handleAddSave,
+        handleDelete, handleAddOpen, handleAddSave,
+        confirmOpen, confirmMessage, onConfirm, closeConfirm,
     };
 }

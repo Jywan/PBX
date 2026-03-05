@@ -20,7 +20,7 @@ class Customer(Base):
     __tablename__ = "customer"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    Company_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("company.id"), nullable=False)
+    company_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("company.id"), nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     phone: Mapped[str] = mapped_column(Text, nullable=False)
     email: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

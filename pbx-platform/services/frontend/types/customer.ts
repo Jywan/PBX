@@ -1,13 +1,15 @@
 export interface Customer {
-    id: string;
+    id: number;
     name: string;
     phone: string;
-    email: string;
-    company: string;
+    email: string | null;
+    company_id: number | null;
+    company_name: string | null;
     group: string;
-    memo: string;
-    createdAt: string;
-    lastCallAt: string | null;
+    memo: string | null;
+    created_at: string;
+    last_call_at: string | null;
+    deactivated_at: string | null;
 }
 
 export interface CustomerGroup {
@@ -19,6 +21,6 @@ export interface CustomerGroup {
 export interface CallHistory {
     id: string;
     date: string;
-    direction: string;
+    direction: "inbound" | "outbound" | "internal";
     duration: string;
 }
