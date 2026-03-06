@@ -21,6 +21,7 @@ interface CustomerDetailProps {
     getGroupLabel: (id: string) => string;
     getGroupColor: (id: string) => string;
     isSystemAdmin: boolean;
+    canUpdate: boolean;
 }
 
 function DetailField({ label, value, editMode, onChange }: {
@@ -44,7 +45,7 @@ function DetailField({ label, value, editMode, onChange }: {
 export default function CustomerDetail({
     selectedCustomer, editMode, editForm, groups, companies, calls,
     setEditForm, onEditStart, onEditCancel, onEditSave,
-    getGroupLabel, getGroupColor, isSystemAdmin,
+    getGroupLabel, getGroupColor, isSystemAdmin, canUpdate,
 }: CustomerDetailProps) {
     if (!selectedCustomer) {
         return (
@@ -71,9 +72,11 @@ export default function CustomerDetail({
                 </div>
                 <div className="detail-actions">
                     {!editMode ? (
-                        <button className="btn-icon" title="수정" onClick={onEditStart}>
-                            <Edit3 size={14} />
-                        </button>
+                        canUpdate && (
+                            <button className="btn-icon" title="수정" onClick={onEditStart}>
+                                <Edit3 size={14} />
+                            </button>
+                        )
                     ) : (
                         <>
                             <button className="btn-icon btn-save" title="저장" onClick={onEditSave}>

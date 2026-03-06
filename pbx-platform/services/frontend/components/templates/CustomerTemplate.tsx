@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
+import { hasPermission } from "@/lib/auth";
 import { useCustomerData } from "@/hooks/useCustomerData";
 import "@/styles/templates/customer.css";
 import Toast from "@/components/common/Toast";
@@ -14,6 +15,11 @@ import CustomerAddModal from "@/components/customer/CustomerAddModal";
 export default function CustomerTemplate() {
     const { token, isSystemAdmin, companyId, isLoading } = useAuth();
     const { toast, showToast } = useToast();
+
+    const canView   = isSystemAdmin || hasPermission("customer");
+    const canCreate = isSystemAdmin || hasPermission("customer-create");
+    const canUpdate = isSystemAdmin || hasPermission("customer-update");
+    const canDelete = isSystemAdmin || hasPermission("customer-delete");
 
     const {
         GROUPS, MOCK_CALLS, companies,
@@ -31,6 +37,10 @@ export default function CustomerTemplate() {
 
     if (isLoading) {
         return <div style={{ textAlign: "center", padding: "50px" }}>로딩 중...</div>;
+    }
+
+    if (!canView) {
+        return <div style={{ textAlign: "center", padding: "50px" }}>고객 관리 페이지에 대한 접근 권한이 없습니다.</div>;
     }
 
     return (
@@ -59,6 +69,8 @@ export default function CustomerTemplate() {
                 onAddOpen={handleAddOpen}
                 getGroupLabel={getGroupLabel}
                 getGroupColor={getGroupColor}
+                canCreate={canCreate}
+                canDelete={canDelete}
             />
             <CustomerDetail
                 selectedCustomer={selectedCustomer}
@@ -74,6 +86,7 @@ export default function CustomerTemplate() {
                 getGroupLabel={getGroupLabel}
                 getGroupColor={getGroupColor}
                 isSystemAdmin={isSystemAdmin}
+                canUpdate={canUpdate}
             />
             <CustomerAddModal
                 isOpen={showAddModal}

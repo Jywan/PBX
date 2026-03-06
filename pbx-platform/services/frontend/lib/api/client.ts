@@ -8,7 +8,10 @@ const apiClient = axios.create();
 apiClient.interceptors.response.use(
     (response) => response,
     async (error) => {
-        if (error.response?.status === 403) {
+        const originalRequest = error.config;
+
+        if (error.response?.status === 403 && !originalRequest._retry) {
+            originalRequest._retry = true;
             const token = Cookies.get("access_token");
             if (token) {
                 try {
@@ -16,8 +19,10 @@ apiClient.interceptors.response.use(
                         headers: { Authorization: `Bearer ${token}` },
                     });
                     useAuthStore.getState().setPermissions(res.data.permissions);
+                    // 권한 갱신 후 원래 요청 재시도
+                    return apiClient(originalRequest);
                 } catch {
-                    // 권한 갱신 실패 시 무시
+                    // 권한 갱신 실패 시 원래 에러 전파
                 }
             }
         }

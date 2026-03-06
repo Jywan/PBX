@@ -15,12 +15,15 @@ interface CustomerListProps {
     onAddOpen: () => void;
     getGroupLabel: (id: string) => string;
     getGroupColor: (id: string) => string;
+    canCreate: boolean;
+    canDelete: boolean;
 }
 
 export default function CustomerList({
     filtered, selectedId, search,
     onSearchChange, onSelect, onDelete, onAddOpen,
     getGroupLabel, getGroupColor,
+    canCreate, canDelete,
 }: CustomerListProps) {
     return (
         <section className="customer-col customer-col-list">
@@ -37,10 +40,12 @@ export default function CustomerList({
                             onChange={e => onSearchChange(e.target.value)}
                         />
                     </div>
-                    <button className="btn-add" onClick={onAddOpen}>
-                        <Plus size={14} />
-                        추가
-                    </button>
+                    {canCreate && (
+                        <button className="btn-add" onClick={onAddOpen}>
+                            <Plus size={14} />
+                            추가
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -91,9 +96,11 @@ export default function CustomerList({
                                     </td>
                                     <td className="cell-date">{formatDateOnly(c.last_call_at)}</td>
                                     <td className="cell-actions" onClick={e => e.stopPropagation()}>
-                                        <button className="btn-icon" title="삭제" onClick={onDelete}>
-                                            <Trash2 size={13} />
-                                        </button>
+                                        {canDelete && (
+                                            <button className="btn-icon" title="삭제" onClick={onDelete}>
+                                                <Trash2 size={13} />
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

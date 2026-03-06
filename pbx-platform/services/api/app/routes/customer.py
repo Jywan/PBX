@@ -7,7 +7,7 @@ from sqlalchemy import select
 from pbx_common.models import Customer, CustomerGroup
 from app.db.session import get_db
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse
-from app.deps import get_current_user
+from app.deps import get_current_user, require_permission
 
 router = APIRouter(
     prefix="/api/v1/customers",
@@ -22,7 +22,8 @@ async def read_customers(
     search: Optional[str] = None,
     skip:   int = 0,
     limit:  int = 200,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("customer-search"))
 ):
     query = select(Customer).where(Customer.is_active == True).order_by(Customer.created_at.desc())
 
@@ -50,7 +51,8 @@ async def read_customers(
 @router.post("", response_model=CustomerResponse)
 async def create_customer(
     customer_in: CustomerCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("customer-create"))
 ):
     try:
         group = CustomerGroup(customer_in.group)
@@ -75,7 +77,8 @@ async def create_customer(
 async def update_customer(
     customer_id: int,
     customer_in: CustomerUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("customer-update"))
 ):
     customer = await db.get(Customer, customer_id)
     if not customer or not customer.is_active:
@@ -100,7 +103,8 @@ async def update_customer(
 @router.delete("/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def deactivate_customer(
     customer_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("customer-delete"))
 ):
     customer = await db.get(Customer, customer_id)
     if not customer or not customer.is_active:
