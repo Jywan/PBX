@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchCalls, CallRecord } from "@/lib/api/calls";
+import { fetchCalls, CallFilter, CallRecord } from "@/lib/api/calls";
 
 const DIRECTION_MAP: Record<string, string> = {
     internal: "내선",
@@ -38,45 +38,53 @@ export function useHistoryData() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<FilterState>(defaultFilter);
-    const [applied, setAppled] = useState<FilterState>(defaultFilter);
     const [selectedId, setSelectedId] = useState<string | null> (null);
+
+    const loadCalls = useCallback(async (f: FilterState) => {
+        if (!token) return;
+        setLoading(true);
+        setError(null);
+        const callFilter: CallFilter = {
+            dateFrom: f.dateFrom || undefined,
+            dateTo: f.dateTo || undefined,
+            direction: f.direction || undefined,
+            status: f.status || undefined,
+            search: f.search || undefined,
+        };
+        try {
+            const data = await fetchCalls(token, callFilter);
+            setCalls(data);
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "unknown";
+            setError("데이터 로드 실패: " + msg);
+        } finally {
+            setLoading(false);
+        }
+    }, [token]);
 
     useEffect(() => {
         if (authLoading || !token) return;
+        loadCalls(defaultFilter);
+    }, [token, authLoading, loadCalls]);
 
-        fetchCalls(token)
-            .then(data => setCalls(data))
-            .catch(e => setError("데이터 로드 실패: " + (e?.message ?? "unknown")))
-            .finally(() => setLoading(false));
-    }, [token, authLoading]);
+    const selectedCall = calls.find(c => c.id ===selectedId) ?? null;
 
-    const filtered = useMemo(() => {
-        return calls.filter(c => {
-            const dt = c.started_at ?? c.created_at;
-            if (applied.dateFrom && new Date(dt) < new Date(applied.dateFrom + "T00:00:00")) return false;
-            if (applied.dateTo && new Date(dt) > new Date(applied.dateTo + "T23:59:59")) return false;
-            if (applied.direction && c.direction !== applied.direction) return false;
-            if (applied.status && c.status !== applied.status) return false;
-            if (applied.search) {
-                const q = applied.search.toLowerCase();
-                const caller = (c.caller_exten ?? "").toLowerCase();
-                const callee = (c.callee_exten ?? "").toLowerCase();
-                if (!caller.includes(q) && !callee.includes(q)) return false;
-            }
-            return true;
-        });
-    }, [calls, applied]);
+    const handleApply = () => {
+        setSelectedId(null);
+        loadCalls(filter);
+    };
 
-    const selectedCall = filtered.find(c => c.id === selectedId) ?? null;
-
-    const handleApply = () => { setAppled(filter); setSelectedId(null) };
-    const handleReset = () => { setFilter(defaultFilter); setAppled(defaultFilter); setSelectedId(null); };
+    const handleReset = () => {
+        setFilter(defaultFilter);
+        setSelectedId(null);
+        loadCalls(defaultFilter);
+    };
 
     function directionLabel(d: string) { return DIRECTION_MAP[d] ?? d; }
     function statusLabel(s: string) { return STATUS_MAP[s] ?? s; }
     function statusClass(s: string) {
         if (s === "ended") return "status-ended";
-        if (s === "up" ) return "status-up";
+        if (s === "up") return "status-up";
         return "status-new";
     }
     function directionClass(d: string) {
@@ -86,11 +94,20 @@ export function useHistoryData() {
     }
 
     return {
-        filtered, selectedCall, loading, error,
-        filter, setFilter,
-        selectedId, setSelectedId,
-        handleApply, handleReset,
-        directionLabel, statusLabel, statusClass, directionClass,
+        filtered: calls,
+        selectedCall,
+        loading,
+        error,
+        filter,
+        setFilter,
+        selectedId,
+        setSelectedId,
+        handleApply,
+        handleReset,
+        directionLabel,
+        statusLabel,
+        statusClass,
+        directionClass,
     };
 }
 

@@ -1,7 +1,8 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import date
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 
 from pbx_common.models import Call
 from app.db.session import get_db
@@ -14,11 +15,41 @@ router = APIRouter(prefix="/api/v1", tags=["Calls"], dependencies=[Depends(get_c
 async def read_calls(
     skip: int = 0, 
     limit: int = 100, 
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+    direction: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db)
 ):
     try:
+        conditions = []
+
+        if date_from:
+            from datetime import datetime, timezone
+            conditions.append(
+                (Call.started_at != None) &
+                (Call.started_at >= datetime.combine(date_from, datetime.min.time()).replace(tzinfo=timezone.utc))
+            )
+        if date_to:
+            from datetime import datetime, timezone, timedelta
+            conditions.append(
+                (Call.started_at != None) &
+                (Call.started_at < datetime.combine(date_to, timedelta(days=1), datetime.min.time()).replace(tzinfo=timezone.utc))
+            )
+        if direction:
+            conditions.append(Call.direction == direction)
+        if status:
+            conditions.append(Call.status == status)
+        if search:
+            conditions.append(
+                Call.caller_exten.ilike(f"%{search}") |
+                Call.callee_exten.ilike(f"%{search}")
+            )
+
         query = (
             select(Call)
+            .where(and_(*conditions))
             .order_by(Call.started_at.desc())
             .offset(skip)
             .limit(limit)
