@@ -20,6 +20,7 @@ import CustomerTemplate from "@/components/templates/CustomerTemplate";
 import CompanyTemplate from "@/components/templates/CompanyTemplate";
 import PermissionTemplate from "@/components/templates/PermissionTemplate";
 import UserTemplate from "@/components/templates/UserTemplate";
+import IvrTemplate from "@/components/templates/IvrTemplate";
 
 // CSS
 import "@/styles/dashboard.css";
@@ -70,7 +71,7 @@ export default function HomePage() {
       /* 직접 정해주신 업체관리 소메뉴 분기 */
       case "company-info": return <CompanyTemplate onAccessDenied={() => setActiveMenu("consult")} />;
       case "company-user": return <UserTemplate onAccessDenied={() => setActiveMenu("consult")} />;
-      case "company-ivr": return <div className="placeholder">IVR트리 설정 화면 준비중</div>;
+      case "company-ivr": return <IvrTemplate />;
       case "company-queue": return <div className="placeholder">Queue 관리 화면 준비중</div>;
       
       case "setting-perm-template": return <PermissionTemplate />;
