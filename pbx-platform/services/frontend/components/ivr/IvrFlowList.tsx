@@ -15,14 +15,20 @@ interface Props {
     companyId: number | null;
     isSystemAdmin: boolean;
     companies: Company[];
+    filterCompanyId: number | null;
+    onFilterCompanyChange: (id: number | null) => void;
+    canCreate: boolean;
+    canUpdate: boolean;
+    canDelete: boolean;
 }
 
 export default function IvrFlowList({
-    flows, selectedFlow, onSelect, onCreate, onDelete, onClone, onToggleActive, companyId, isSystemAdmin, companies,
+    flows, selectedFlow, onSelect, onCreate, onDelete, onClone, onToggleActive,
+    companyId, isSystemAdmin, companies, filterCompanyId, onFilterCompanyChange,
+    canCreate, canUpdate, canDelete,
 }: Props) {
     const [showCreate, setShowCreate] = useState(false);
     const [newName, setNewName] = useState("");
-    const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
     const [cloneFlowId, setCloneFlowId] = useState<number | null>(null);
     const [cloneName, setCloneName] = useState("");
 
@@ -31,7 +37,7 @@ export default function IvrFlowList({
 
     const handleCreate = () => {
         if (!newName.trim()) return;
-        const targetCompanyId = isSystemAdmin ? selectedCompanyId : companyId;
+        const targetCompanyId = isSystemAdmin ? filterCompanyId : companyId;
         onCreate({ name: newName.trim(), company_id: targetCompanyId, is_preset: false });
         setNewName("");
         setShowCreate(false);
@@ -59,8 +65,8 @@ export default function IvrFlowList({
                 <div className="ivr-company-select-wrap">
                     <select
                         className="ivr-company-select"
-                        value={selectedCompanyId ?? ""}
-                        onChange={e => setSelectedCompanyId(e.target.value ? Number(e.target.value) : null)}
+                        value={filterCompanyId ?? ""}
+                        onChange={e => onFilterCompanyChange(e.target.value ? Number(e.target.value) : null)}
                     >
                         <option value="">업체 없음 (글로벌)</option>
                         {companies.map(c => (
@@ -74,10 +80,12 @@ export default function IvrFlowList({
             <div className="ivr-flow-section">
                 <div className="ivr-section-header">
                     <span className="ivr-section-label">플로우 목록</span>
-                    <button className="btn-ivr-add" onClick={() => setShowCreate(v => !v)} title="새 플로우">+</button>
+                    {canCreate && (
+                        <button className="btn-ivr-add" onClick={() => setShowCreate(v => !v)} title="새 플로우">+</button>
+                    )}
                 </div>
 
-                {showCreate && (
+                {canCreate && showCreate && (
                     <div className="ivr-create-row">
                         <input
                             className="ivr-name-input"
@@ -105,20 +113,24 @@ export default function IvrFlowList({
                         <span className={`ivr-active-dot ${flow.is_active ? "on" : "off"}`} />
                         <span className="ivr-flow-name">{flow.name}</span>
                         <div className="ivr-flow-actions" onClick={e => e.stopPropagation()}>
-                            <button
-                                className="btn-ivr-icon"
-                                title={flow.is_active ? "비활성화" : "활성화"}
-                                onClick={() => onToggleActive(flow.id, !flow.is_active)}
-                            >
-                                {flow.is_active ? "⏸" : "▶"}
-                            </button>
-                            <button
-                                className="btn-ivr-icon btn-danger"
-                                title="삭제"
-                                onClick={() => onDelete(flow.id)}
-                            >
-                                🗑
-                            </button>
+                            {canUpdate && (
+                                <button
+                                    className="btn-ivr-icon"
+                                    title={flow.is_active ? "비활성화" : "활성화"}
+                                    onClick={() => onToggleActive(flow.id, !flow.is_active)}
+                                >
+                                    {flow.is_active ? "⏸" : "▶"}
+                                </button>
+                            )}
+                            {canDelete && (
+                                <button
+                                    className="btn-ivr-icon btn-danger"
+                                    title="삭제"
+                                    onClick={() => onDelete(flow.id)}
+                                >
+                                    🗑
+                                </button>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -138,15 +150,17 @@ export default function IvrFlowList({
                         >
                             <span className="ivr-preset-badge">P</span>
                             <span className="ivr-flow-name">{flow.name}</span>
-                            <div className="ivr-flow-actions" onClick={e => e.stopPropagation()}>
-                                <button
-                                    className="btn-ivr-icon"
-                                    title="이 프리셋으로 새 플로우 생성"
-                                    onClick={() => handleClone(flow)}
-                                >
-                                    📋
-                                </button>
-                            </div>
+                            {canCreate && (
+                                <div className="ivr-flow-actions" onClick={e => e.stopPropagation()}>
+                                    <button
+                                        className="btn-ivr-icon"
+                                        title="이 프리셋으로 새 플로우 생성"
+                                        onClick={() => handleClone(flow)}
+                                    >
+                                        📋
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

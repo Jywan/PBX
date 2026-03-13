@@ -31,9 +31,11 @@ interface Props {
     onSaveEdit: (nodeId: number, data: IvrNodeUpdate) => void;
     onDelete: (nodeId: number) => void;
     onClose: () => void;
+    canUpdate: boolean;
+    canDelete: boolean;
 }
 
-export default function IvrNodeEditor({ editorMode, onSaveAdd, onSaveEdit, onDelete, onClose }: Props) {
+export default function IvrNodeEditor({ editorMode, onSaveAdd, onSaveEdit, onDelete, onClose, canUpdate, canDelete }: Props) {
     const [nodeType, setNodeType] = useState<IvrNodeType>("greeting");
     const [name, setName] = useState("");
     const [dtmfKey, setDtmfKey] = useState("");
@@ -163,14 +165,16 @@ export default function IvrNodeEditor({ editorMode, onSaveAdd, onSaveEdit, onDel
                         <label className="ivr-field-label">음성사서함</label>
                         <input className="ivr-field-input" value={mailbox} onChange={e => setMailbox(e.target.value)} placeholder="예: 1001@default" />
                     </>
-                    )}
-                </div>
+                )}
+            </div>
 
-                <div className="ivr-editor-footer">
-                    {isEdit && (
-                        <button className="btn-ivr-delete" onClick={() => onDelete(editorMode.node.id)}>삭제</button>
-                    )}
-                <button className="btn-ivr-save" onClick={handleSave}>저장</button>
+            <div className="ivr-editor-footer">
+                {isEdit && canDelete && (
+                    <button className="btn-ivr-delete" onClick={() => onDelete(editorMode.node.id)}>삭제</button>
+                )}
+                {canUpdate && (
+                    <button className="btn-ivr-save" onClick={handleSave}>저장</button>
+                )}
             </div>
         </div>
     );

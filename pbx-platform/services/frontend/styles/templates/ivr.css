@@ -1,7 +1,7 @@
 /* ============================
     IVR 템플릿 레이아웃
    ============================ */
-.ivr-container {
+   .ivr-container {
     display: flex;
     height: 100%;
     gap: 16px;
@@ -45,7 +45,9 @@
     background: #f8f9fa;
     color: #191f28;
     cursor: pointer;
+    transition: border-color 0.12s;
 }
+.ivr-company-select:focus { border-color: #4f80ff; outline: none; }
 
 .ivr-flow-section {
     display: flex;
@@ -81,6 +83,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.12s;
 }
 .btn-ivr-add:hover { background: #3a6de0; }
 
@@ -100,6 +103,7 @@
     color: #191f28;
     outline: none;
     min-width: 0;
+    transition: border-color 0.12s;
 }
 .ivr-name-input:focus { border-color: #4f80ff; }
 
@@ -112,7 +116,10 @@
     font-size: 12px;
     cursor: pointer;
     white-space: nowrap;
+    transition: background 0.12s;
 }
+.btn-ivr-confirm:hover { background: #3a6de0; }
+
 .btn-ivr-cancel {
     padding: 4px 8px;
     background: #f3f4f6;
@@ -122,7 +129,9 @@
     font-size: 12px;
     cursor: pointer;
     white-space: nowrap;
+    transition: background 0.12s;
 }
+.btn-ivr-cancel:hover { background: #e5e7eb; }
 
 .ivr-flow-item {
     display: flex;
@@ -238,7 +247,10 @@
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
+    transition: background 0.12s;
 }
+.btn-modal-cancel:hover { background: #f3f4f6; }
+
 .btn-modal-save {
     padding: 7px 14px;
     border: none;
@@ -248,7 +260,9 @@
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
+    transition: background 0.12s;
 }
+.btn-modal-save:hover { background: #3a6de0; }
 
 /* ============================
     중앙 캔버스
@@ -290,6 +304,12 @@
     color: #191f28;
 }
 
+.ivr-canvas-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .btn-ivr-add-root {
     padding: 6px 12px;
     background: #4f80ff;
@@ -299,78 +319,96 @@
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
+    transition: background 0.12s;
 }
 .btn-ivr-add-root:hover { background: #3a6de0; }
+
+.btn-ivr-add-child {
+    padding: 6px 14px;
+    border: 1px solid #c7d7ff;
+    border-radius: 8px;
+    background: #f0f4ff;
+    color: #4f80ff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.btn-ivr-add-child:hover { background: #dce8ff; }
 
 .ivr-canvas-inner {
     flex: 1;
     overflow: hidden;
+    position: relative;
+    background-color: #fafbfc;
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+.ivr-canvas-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 12px;
+    color: #8b95a1;
+    font-size: 14px;
 }
 
 /* ============================
-    React Flow 노드 카드
+    GoJS 다이어그램
 ============================ */
-.ivr-node-card {
-    background: #fff;
-    border: 2px solid #e5e8eb;
-    border-top-width: 4px;
-    border-radius: 10px;
-    padding: 10px 12px;
-    min-width: 140px;
-    max-width: 180px;
-    cursor: pointer;
-    position: relative;
-    transition: box-shadow 0.15s, border-color 0.15s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-.ivr-node-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); border-color: #c7cdd4; }
-.ivr-node-card.selected { border-color: #4f80ff !important; box-shadow: 0 0 0 3px #dbeafe; }
-
-.ivr-node-type-badge {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 700;
-    color: #fff;
-    padding: 2px 7px;
-    border-radius: 6px;
-    margin-bottom: 4px;
+.ivr-gojs-diagram {
+    width: 100%;
+    height: 100%;
 }
 
-.ivr-node-dtmf {
-    font-size: 11px;
-    color: #6b7280;
-    margin-bottom: 2px;
-}
-
-.ivr-node-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #191f28;
-    word-break: break-word;
-}
-
-.btn-add-child {
+/* ============================
+    줌 컨트롤
+============================ */
+.ivr-canvas-zoom-controls {
     position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 20px;
-    height: 20px;
-    background: #4f80ff;
-    color: #fff;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff;
+    border: 1px solid #e5e8eb;
+    border-radius: 10px;
+    padding: 4px 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    z-index: 20;
+}
+
+.ivr-zoom-btn {
+    width: 28px;
+    height: 28px;
     border: none;
-    border-radius: 50%;
-    font-size: 14px;
-    line-height: 1;
+    background: none;
     cursor: pointer;
+    font-size: 16px;
+    color: #4b5563;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10;
-    opacity: 0;
-    transition: opacity 0.1s;
+    line-height: 1;
+    transition: background 0.12s;
 }
-.ivr-node-card:hover .btn-add-child { opacity: 1; }
+.ivr-zoom-btn:hover { background: #f3f4f6; }
+
+.ivr-zoom-reset {
+    font-size: 14px;
+    color: #9ca3af;
+    border-left: 1px solid #e5e8eb;
+    border-radius: 0 6px 6px 0;
+    padding-left: 4px;
+    margin-left: 2px;
+}
 
 /* ============================
     오른쪽 에디터 패널
@@ -447,6 +485,7 @@
     outline: none;
     width: 100%;
     box-sizing: border-box;
+    transition: border-color 0.12s, background 0.12s;
 }
 .ivr-field-input:focus,
 .ivr-field-select:focus { border-color: #4f80ff; background: #fff; }
@@ -463,6 +502,7 @@
     box-sizing: border-box;
     resize: vertical;
     min-height: 60px;
+    transition: border-color 0.12s, background 0.12s;
 }
 .ivr-field-textarea:focus { border-color: #4f80ff; background: #fff; }
 
@@ -484,6 +524,7 @@
     font-weight: 600;
     cursor: pointer;
     margin-right: auto;
+    transition: background 0.12s;
 }
 .btn-ivr-delete:hover { background: #fee2e2; }
 
@@ -496,5 +537,6 @@
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
+    transition: background 0.12s;
 }
 .btn-ivr-save:hover { background: #3a6de0; }

@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
 import { useIvrData } from "@/hooks/useIvrData";
 import { fetchCompanies } from "@/lib/api/companies";
+import { hasPermission } from "@/lib/auth";
 import Toast from "@/components/common/Toast";
 import IvrFlowList from "@/components/ivr/IvrFlowList";
 import IvrTreeCanvas from "@/components/ivr/IvrTreeCanvas";
@@ -22,6 +23,11 @@ export default function IvrTemplate() {
     const { toast, showToast } = useToast();
     const [companies, setCompanies] = useState<Company[]>([]);
 
+    const canView   = isSystemAdmin || hasPermission("ivr-detail");
+    const canCreate = isSystemAdmin || hasPermission("ivr-create");
+    const canUpdate = isSystemAdmin || hasPermission("ivr-update");
+    const canDelete = isSystemAdmin || hasPermission("ivr-delete");
+
     useEffect(() => {
         if (!token || !isSystemAdmin) return;
         fetchCompanies(token).then(setCompanies).catch(() => {});
@@ -29,6 +35,7 @@ export default function IvrTemplate() {
 
     const {
         flows, selectedFlow, selectedNode,
+        filterCompanyId, setFilterCompanyId,
         setSelectedNode,
         handleSelectFlow,
         handleCreateFlow,
@@ -72,7 +79,14 @@ export default function IvrTemplate() {
         setEditorMode(null);
     };
 
+    // drag reparent: 노드를 다른 노드 위에 드롭 시 parent_id 변경
+    const handleReparentNode = async (nodeId: number, newParentId: number | null) => {
+        await handleUpdateNode(nodeId, { parent_id: newParentId });
+    };
+
     if (isLoading) return <div style={{ textAlign: "center", padding: "50px" }}>로딩 중...</div>;
+
+    if (!canView) return <div style={{ textAlign: "center", padding: "50px" }}>IVR 페이지에 대한 접근 권한이 없습니다.</div>;
 
     return (
         <div className="ivr-container">
@@ -89,6 +103,11 @@ export default function IvrTemplate() {
             companyId={companyId}
             isSystemAdmin={isSystemAdmin}
             companies={companies}
+            filterCompanyId={filterCompanyId}
+            onFilterCompanyChange={setFilterCompanyId}
+            canCreate={canCreate}
+            canUpdate={canUpdate}
+            canDelete={canDelete}
         />
 
         <IvrTreeCanvas
@@ -97,6 +116,8 @@ export default function IvrTemplate() {
             onSelectNode={handleNodeSelect}
             onAddChildNode={handleAddChildNode}
             onAddRootNode={handleAddRootNode}
+            onReparentNode={handleReparentNode}
+            canUpdate={canUpdate}
         />
 
         <IvrNodeEditor
@@ -105,6 +126,8 @@ export default function IvrTemplate() {
             onSaveEdit={handleSaveEdit}
             onDelete={handleDeleteNodeAndClose}
             onClose={() => setEditorMode(null)}
+            canUpdate={canUpdate}
+            canDelete={canDelete}
         />
         </div>
     );

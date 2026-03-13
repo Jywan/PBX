@@ -20,7 +20,7 @@ async def list_flows(
     company_id: Optional[int] = Query(None),
     include_presets: bool = Query(True),
     db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_permission("ivr")),
+    _: object = Depends(require_permission("ivr-detail")),
 ): 
     from sqlalchemy import or_
     conditions = []
@@ -39,11 +39,18 @@ async def list_flows(
         .order_by(IvrFlow.is_preset.desc(), IvrFlow.name)
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    flows = result.scalars().all()
+    for flow in flows:
+        flow.nodes.sort(key=lambda n: n.sort_order)
+    return flows
 
 
 @router.post("/flows", response_model=IvrFlowResponse)
-async def created_flow(data: IvrFlowCreate, db: AsyncSession = Depends(get_db), _: object = Depends(require_permission("ivr-create"))):
+async def created_flow(
+    data: IvrFlowCreate, 
+    db: AsyncSession = Depends(get_db), 
+    _: object = Depends(require_permission("ivr-create")),
+):
     flow = IvrFlow(**data.model_dump())
     db.add(flow)
     await db.commit()
@@ -53,7 +60,11 @@ async def created_flow(data: IvrFlowCreate, db: AsyncSession = Depends(get_db), 
 
 
 @router.get("/flows/{flow_id}", response_model=IvrFlowResponse)
-async def get_flow(flow_id: int, db: AsyncSession = Depends(get_db)):
+async def get_flow(
+    flow_id: int, 
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("ivr-detail")),
+):
     stmt = (
         select(IvrFlow)
         .where(IvrFlow.id == flow_id)
@@ -63,11 +74,17 @@ async def get_flow(flow_id: int, db: AsyncSession = Depends(get_db)):
     flow = result.scalar_one_or_none()
     if not flow:
         raise HTTPException(status_code=404, detail="IVR 플로우를 찾을 수 없습니다.")
+    flow.nodes.sort(key=lambda n: n.sort_order)
     return flow
 
 
 @router.patch("/flows/{flow_id}", response_model=IvrFlowResponse)
-async def update_flow(flow_id: int, data: IvrFlowUpdate, db: AsyncSession = Depends(get_db)):
+async def update_flow(
+    flow_id: int, 
+    data: IvrFlowUpdate, 
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("ivr-update")),
+):
     stmt = (
         select(IvrFlow)
         .where(IvrFlow.id == flow_id)
@@ -85,7 +102,11 @@ async def update_flow(flow_id: int, data: IvrFlowUpdate, db: AsyncSession = Depe
 
 
 @router.delete("/flows/{flow_id}")
-async def delete_flow(flow_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_flow(
+    flow_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("ivr-delete")),
+):
     result = await db.execute(select(IvrFlow).where(IvrFlow.id == flow_id))
     flow = result.scalar_one_or_none()
     if not flow:
@@ -101,6 +122,7 @@ async def clone_flow(
     new_name: str = Query(...),
     company_id: Optional[int] = Query(None),
     db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("ivr-create")),
 ):
     stmt = (
         select(IvrFlow)
@@ -149,7 +171,12 @@ async def clone_flow(
 
 
 @router.post("/flows/{flow_id}/nodes", response_model=IvrNodeResponse)
-async def create_node(flow_id: int, data: IvrNodeCreate, db: AsyncSession = Depends(get_db)):
+async def create_node(
+    flow_id: int, 
+    data: IvrNodeCreate, 
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("ivr-update")),
+):
     check = await db.execute(select(IvrFlow).where(IvrFlow.id == flow_id))
     if not check.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="IVR 플로우를 찾을 수 없습니다.")
@@ -161,7 +188,12 @@ async def create_node(flow_id: int, data: IvrNodeCreate, db: AsyncSession = Depe
 
 
 @router.patch("/nodes/{node_id}", response_model=IvrNodeResponse)
-async def update_node(node_id: int, data: IvrNodeUpdate, db: AsyncSession = Depends(get_db)):
+async def update_node(
+    node_id: int, 
+    data: IvrNodeUpdate, 
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("ivr-update")),
+):
     result = await db.execute(select(IvrNode).where(IvrNode.id == node_id))
     node = result.scalar_one_or_none()
     if not node:
@@ -174,7 +206,11 @@ async def update_node(node_id: int, data: IvrNodeUpdate, db: AsyncSession = Depe
 
 
 @router.delete("/nodes/{node_id}")
-async def delete_node(node_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_node(
+    node_id: int, 
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("ivr-update"))
+):
     result = await db.execute(select(IvrNode).where(IvrNode.id == node_id))
     node = result.scalar_one_or_none()
     if not node:

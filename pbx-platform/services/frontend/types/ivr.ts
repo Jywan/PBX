@@ -1,14 +1,10 @@
 export type IvrNodeType = "greeting" | "menu" | "transfer" | "hangup" | "voicemail";
 
 export interface IvrNodeConfig {
-    // greeting
     message?: string;
-    // memu
     prompt?: string;
     timeout?: number;
-    // transfer
     target_exten?: string;
-    // voicemail
     mailbox?: string;
 }
 
@@ -57,6 +53,7 @@ export interface IvrNodeCreate {
 }
 
 export interface IvrNodeUpdate {
+    parent_id?: number | null;
     dtmf_key?: string | null;
     node_type?: IvrNodeType;
     name?: string;

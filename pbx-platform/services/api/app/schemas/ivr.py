@@ -11,6 +11,7 @@ class IvrNodeCreate(BaseModel):
     sort_order: int = 0
 
 class IvrNodeUpdate(BaseModel):
+    parent_id: Optional[int] = None
     dtmf_key: Optional[str] = None
     node_type: Optional[str] = None
     name: Optional[str] = None

@@ -12,6 +12,7 @@ export function useIvrData(showToast: (msg: string, type: "success" | "error") =
     const [selectedFlow, setSelectedFlow] = useState<IvrFlow | null>(null);
     const [selectedNode, setSelectedNode] = useState<IvrNode | null>(null);
     const [loading, setLoading] = useState(false);
+    const [filterCompanyId, setFilterCompanyId] = useState<number | null>(null);
 
     // 플로우 목록 로드
     const loadFlows = useCallback(async () => {
@@ -19,7 +20,7 @@ export function useIvrData(showToast: (msg: string, type: "success" | "error") =
         setLoading(true);
         try {
         const data = await fetchFlows(token, {
-            company_id: isSystemAdmin ? undefined : companyId ?? undefined,
+            company_id: isSystemAdmin ? (filterCompanyId ?? undefined) : companyId ?? undefined,
             include_presets: true,
         });
         setFlows(data);
@@ -28,7 +29,7 @@ export function useIvrData(showToast: (msg: string, type: "success" | "error") =
         } finally {
         setLoading(false);
         }
-    }, [token, companyId, isSystemAdmin, showToast]);
+    }, [token, companyId, isSystemAdmin, filterCompanyId, showToast]);
 
     useEffect(() => {
         loadFlows();
@@ -154,6 +155,8 @@ export function useIvrData(showToast: (msg: string, type: "success" | "error") =
         selectedFlow,
         selectedNode,
         loading,
+        filterCompanyId,
+        setFilterCompanyId,
         setSelectedNode,
         handleSelectFlow,
         handleCreateFlow,
