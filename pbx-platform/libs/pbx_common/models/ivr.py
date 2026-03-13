@@ -47,3 +47,17 @@ class IvrNode(Base):
     children: Mapped[list["IvrNode"]] = relationship(
         "IvrNode", cascade="all, delete-orphan", foreign_keys=[parent_id]
     )
+
+class IvrSound(Base):
+    __tablename__ = "ivr_sounds"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    company_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("company.id", ondelete="SET NULL"), nullable=True
+    )
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    filename: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    original_filename: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
+    )

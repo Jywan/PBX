@@ -8,6 +8,8 @@ dependencies = [
   "SQLAlchemy>=2.0",
   "asyncpg>=0.28",
   "python-dotenv>=1.0",
+  "python-multipart>=0.0.9",
+  "pydantic-settings>=2.0",
   "pbx-common @ file://../libs/pbx_common",
 ]
 

@@ -1,5 +1,7 @@
+import uuid, os, shutil
+
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -8,8 +10,10 @@ from app.db.session import get_db
 from app.schemas.ivr import (
     IvrFlowCreate, IvrFlowUpdate, IvrFlowResponse,
     IvrNodeCreate, IvrNodeUpdate, IvrNodeResponse,
+    IvrSoundResponse,
 )
-from pbx_common.models import IvrFlow, IvrNode
+from app.core.config import get_settings
+from pbx_common.models.ivr import IvrFlow, IvrNode, IvrSound
 from app.deps import get_current_user, require_permission
 
 router = APIRouter(prefix="/api/v1/ivr", tags=["IVR"], dependencies=[Depends(get_current_user)],)
@@ -218,3 +222,66 @@ async def delete_node(
     await db.delete(node)
     await db.commit()
     return {"message": "노드 삭제 완료"}
+
+
+@router.get("/sounds", response_model=list[IvrSoundResponse])
+async def list_sounds(
+    company_id: Optional[int] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("ivr-detail")),
+):
+    conditions = []
+    if company_id is not None:
+        conditions.append(IvrSound.company_id == company_id)
+    stmt = select(IvrSound).where(*conditions).order_by(IvrSound.created_at.desc())
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.post("/sounds", response_model=IvrSoundResponse)
+async def upload_sound(
+    name: str = Form(...),
+    company_id: Optional[int] = Form(None),
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("ivr-create")),
+):
+    settings = get_settings()
+    ext = os.path.splitext(file.filename or "")[1].lower() or ".wav"
+    unique_filename = f"{uuid.uuid4().hex}{ext}"
+    subdir = str(company_id) if company_id else "global"
+    dir_path = os.path.join(settings.sounds_dir, subdir)
+    os.makedirs(dir_path, exist_ok=True)
+    file_path = os.path.join(dir_path, unique_filename)
+
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    sound = IvrSound(
+        company_id=company_id,
+        name=name,
+        filename=f"{subdir}/{unique_filename}",
+        original_filename=file.filename or unique_filename,
+    )
+    db.add(sound)
+    await db.commit()
+    await db.refresh(sound)
+    return sound
+
+
+@router.delete("/sounds/{sound_id}", status_code=204)
+async def delete_sound(
+    sound_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("ivr-delete")),
+):
+    settings = get_settings()
+    result = await db.execute(select(IvrSound).where(IvrSound.id == sound_id))
+    sound = result.scalar_one_or_none()
+    if not sound:
+        raise HTTPException(status_code=404, detail="음성 파일을 찾을 수 없습니다.")
+    file_path = os.path.join(settings.sounds_dir, sound.filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    await db.delete(sound)
+    await db.commit()

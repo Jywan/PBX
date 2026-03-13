@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # 필수 변수
     database_url: str
+    sounds_dir: str = "/sounds"
 
     # 선택 변수 (기본값 있음)
     api_title: str = "PBX API"
