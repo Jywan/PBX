@@ -47,13 +47,17 @@ class IvrNode(Base):
     children: Mapped[list["IvrNode"]] = relationship(
         "IvrNode", cascade="all, delete-orphan", foreign_keys=[parent_id]
     )
+    sound: Mapped[Optional["IvrSound"]] = relationship(
+        "IvrSound", back_populates="node", uselist=False, cascade="all, delete-orphan"
+    )
+
 
 class IvrSound(Base):
     __tablename__ = "ivr_sounds"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    company_id: Mapped[Optional[int]] = mapped_column(
-        Integer, ForeignKey("company.id", ondelete="SET NULL"), nullable=True
+    node_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("ivr_nodes.id", ondelete="CASCADE"), nullable=False, unique=True
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     filename: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
@@ -61,3 +65,5 @@ class IvrSound(Base):
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
     )
+
+    node: Mapped["IvrNode"] = relationship("IvrNode", back_populates="sound")

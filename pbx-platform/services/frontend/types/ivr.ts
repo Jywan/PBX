@@ -8,6 +8,15 @@ export interface IvrNodeConfig {
     mailbox?: string;
 }
 
+export interface IvrSound {
+    id: number;
+    node_id: number;
+    name: string;
+    filename: string;
+    original_filename: string;
+    created_at: string;
+}
+
 export interface IvrNode {
     id: number;
     flow_id: number;
@@ -17,6 +26,7 @@ export interface IvrNode {
     name: string;
     config: IvrNodeConfig;
     sort_order: number;
+    sound?: IvrSound | null;
     children?: IvrNode[];
 }
 

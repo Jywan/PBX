@@ -171,13 +171,13 @@ export default function IvrFlowList({
                 <div className="ivr-modal-overlay" onClick={() => setCloneFlowId(null)}>
                     <div className="ivr-modal-box" onClick={e => e.stopPropagation()}>
                         <div className="ivr-modal-title">프리셋 복제</div>
-                        <input 
+                        <input
                             className="ivr-name-input"
                             value={cloneName}
                             onChange={e => setCloneName(e.target.value)}
                             onKeyDown={e => e.key === "Enter" && handleCloneConfirm()}
                             placeholder="새 플로우 이름"
-                            autoFocus 
+                            autoFocus
                         />
                         <div className="ivr-modal-footer">
                             <button className="btn-modal-cancel" onClick={() => setCloneFlowId(null)}>취소</button>

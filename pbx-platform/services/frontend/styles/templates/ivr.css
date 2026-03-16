@@ -540,3 +540,122 @@
     transition: background 0.12s;
 }
 .btn-ivr-save:hover { background: #3a6de0; }
+
+/* ============================
+    음성 파일 관리 모달
+============================ */
+.ivr-sound-modal {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    width: 480px;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
+.ivr-sound-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ivr-sound-upload-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.ivr-sound-file-input {
+    flex: 1;
+    font-size: 12px;
+    min-width: 0;
+}
+
+.ivr-sound-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ivr-sound-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.ivr-sound-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.ivr-sound-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #191f28;
+}
+
+.ivr-sound-original {
+    font-size: 11px;
+    color: #8b95a1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-ivr-sound-mgr {
+    padding: 6px 12px;
+    border: 1px solid #e5e8eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #4b5563;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.btn-ivr-sound-mgr:hover { background: #f3f4f6; }
+
+/* 노드 에디터 - 음성파일 */
+.ivr-sound-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ivr-sound-current {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border: 1px solid #e5e8eb;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.ivr-sound-upload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border: 1px dashed #c5cad2;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #4b5563;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.ivr-sound-upload-label:hover { background: #f3f4f6; }

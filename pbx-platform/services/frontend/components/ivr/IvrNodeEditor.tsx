@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { IvrNode, IvrNodeType, IvrNodeCreate, IvrNodeUpdate } from "@/types/ivr";
 
 const NODE_TYPES: { value: IvrNodeType; label: string }[] = [
@@ -33,9 +33,14 @@ interface Props {
     onClose: () => void;
     canUpdate: boolean;
     canDelete: boolean;
+    onUploadSound: (nodeId: number, formData: FormData) => Promise<void>;
+    onDeleteSound: (nodeId: number) => Promise<void>;
 }
 
-export default function IvrNodeEditor({ editorMode, onSaveAdd, onSaveEdit, onDelete, onClose, canUpdate, canDelete }: Props) {
+export default function IvrNodeEditor({
+    editorMode, onSaveAdd, onSaveEdit, onDelete, onClose,
+    canUpdate, canDelete, onUploadSound, onDeleteSound,
+}: Props) {
     const [nodeType, setNodeType] = useState<IvrNodeType>("greeting");
     const [name, setName] = useState("");
     const [dtmfKey, setDtmfKey] = useState("");
@@ -44,6 +49,8 @@ export default function IvrNodeEditor({ editorMode, onSaveAdd, onSaveEdit, onDel
     const [timeout, setTimeoutVal] = useState(5);
     const [targetExten, setTargetExten] = useState("");
     const [mailbox, setMailbox] = useState("");
+    const [soundUploading, setSoundUploading] = useState(false);
+    const fileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!editorMode) return;
@@ -56,7 +63,7 @@ export default function IvrNodeEditor({ editorMode, onSaveAdd, onSaveEdit, onDel
             setPrompt(n.config.prompt ?? "");
             setTimeoutVal(n.config.timeout ?? 5);
             setTargetExten(n.config.target_exten ?? "");
-            setMailbox(n.config.mailbox ?? "")
+            setMailbox(n.config.mailbox ?? "");
         } else {
             setNodeType("greeting");
             setName("");
@@ -78,7 +85,7 @@ export default function IvrNodeEditor({ editorMode, onSaveAdd, onSaveEdit, onDel
     }
 
     const buildConfig = () => {
-        if (nodeType === "greeting") return {message};
+        if (nodeType === "greeting") return { message };
         if (nodeType === "menu") return { prompt, timeout };
         if (nodeType === "transfer") return { target_exten: targetExten };
         if (nodeType === "voicemail") return { mailbox };
@@ -108,10 +115,39 @@ export default function IvrNodeEditor({ editorMode, onSaveAdd, onSaveEdit, onDel
         }
     };
 
+    const handleSoundFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (editorMode.mode !== "edit") return;
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const fd = new FormData();
+        fd.append("name", file.name.replace(/\.[^.]+$/, ""));
+        fd.append("file", file);
+        setSoundUploading(true);
+        try {
+            await onUploadSound(editorMode.node.id, fd);
+        } finally {
+            setSoundUploading(false);
+            if (fileRef.current) fileRef.current.value = "";
+        }
+    };
+
+    const handleSoundDelete = async () => {
+        if (editorMode.mode !== "edit") return;
+        setSoundUploading(true);
+        try {
+            await onDeleteSound(editorMode.node.id);
+        } finally {
+            setSoundUploading(false);
+        }
+    };
+
     const isEdit = editorMode.mode === "edit";
+    const hasSoundField = nodeType === "greeting" || nodeType === "menu";
+    const currentSound = isEdit ? editorMode.node.sound : null;
+
     const parentLabel = editorMode.mode === "add" && editorMode.parentNode
-    ? `상위: ${editorMode.parentNode.name}`
-    : editorMode.mode === "add" ? "루트 노드" : null;
+        ? `상위: ${editorMode.parentNode.name}`
+        : editorMode.mode === "add" ? "루트 노드" : null;
 
     return (
         <div className="ivr-editor-panel">
@@ -136,6 +172,38 @@ export default function IvrNodeEditor({ editorMode, onSaveAdd, onSaveEdit, onDel
                     <option value="">없음</option>
                     {DTMF_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
                 </select>
+
+                {hasSoundField && (
+                    <>
+                        <label className="ivr-field-label">음성 파일</label>
+                        {isEdit ? (
+                            <div className="ivr-sound-field">
+                                {currentSound ? (
+                                    <div className="ivr-sound-current">
+                                        <div className="ivr-sound-info">
+                                            <span className="ivr-sound-name">{currentSound.name}</span>
+                                            <span className="ivr-sound-original">{currentSound.original_filename}</span>
+                                        </div>
+                                        <div style={{ display: "flex", gap: "4px" }}>
+                                            <label className="btn-ivr-icon" title="파일 변경" style={{ cursor: soundUploading ? "not-allowed" : "pointer" }}>
+                                                📎
+                                                <input ref={fileRef} type="file" hidden accept=".wav,.mp3,.gsm" onChange={handleSoundFileChange} disabled={soundUploading} />
+                                            </label>
+                                            <button className="btn-ivr-icon btn-danger" onClick={handleSoundDelete} disabled={soundUploading}>🗑</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <label className="ivr-sound-upload-label" style={{ opacity: soundUploading ? 0.5 : 1 }}>
+                                        {soundUploading ? "업로드 중..." : "📎 파일 업로드"}
+                                        <input ref={fileRef} type="file" hidden accept=".wav,.mp3,.gsm" onChange={handleSoundFileChange} disabled={soundUploading} />
+                                    </label>
+                                )}
+                            </div>
+                        ) : (
+                            <span className="ivr-empty-hint" style={{ fontSize: "11px" }}>노드 저장 후 업로드 가능</span>
+                        )}
+                    </>
+                )}
 
                 {nodeType === "greeting" && (
                     <>

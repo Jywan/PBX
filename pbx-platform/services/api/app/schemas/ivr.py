@@ -2,6 +2,18 @@ from datetime import datetime
 from typing import Any, Optional
 from pydantic import BaseModel
 
+
+class IvrSoundResponse(BaseModel):
+    id: int
+    node_id: int
+    name: str
+    filename: str
+    original_filename: str
+    created_at: datetime
+
+    class Config:
+        from_attribute = True
+
 class IvrNodeCreate(BaseModel):
     parent_id: Optional[int] = None
     dtmf_key: Optional[str] = None
@@ -27,7 +39,7 @@ class IvrNodeResponse(BaseModel):
     name: str
     config: dict[str, Any]
     sort_order: int
-
+    sound: Optional[IvrSoundResponse] = None
     class Config:
         from_attributes = True
 
@@ -49,17 +61,6 @@ class IvrFlowResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     nodes: list[IvrNodeResponse] = []
-
-    class Config:
-        from_attributes = True
-
-class IvrSoundResponse(BaseModel):
-    id: int
-    company_id: Optional[int]
-    name: str
-    filename: str
-    original_filename: str
-    created_at: datetime
 
     class Config:
         from_attributes = True

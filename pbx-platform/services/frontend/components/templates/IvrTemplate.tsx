@@ -45,6 +45,8 @@ export default function IvrTemplate() {
         handleCreateNode,
         handleUpdateNode,
         handleDeleteNode,
+        handleUploadNodeSound,
+        handleDeleteNodeSound,
     } = useIvrData(showToast);
 
     const [editorMode, setEditorMode] = useState<EditorMode | null>(null);
@@ -65,8 +67,12 @@ export default function IvrTemplate() {
     };
 
     const handleSaveAdd = async (data: IvrNodeCreate) => {
-        await handleCreateNode(data);
-        setEditorMode(null);
+        const newNode = await handleCreateNode(data);
+        if (newNode) {
+            setEditorMode({ mode: "edit", node: newNode });
+        } else {
+            setEditorMode(null);
+        }
     };
 
     const handleSaveEdit = async (nodeId: number, data: IvrNodeUpdate) => {
@@ -79,56 +85,66 @@ export default function IvrTemplate() {
         setEditorMode(null);
     };
 
-    // drag reparent: 노드를 다른 노드 위에 드롭 시 parent_id 변경
     const handleReparentNode = async (nodeId: number, newParentId: number | null) => {
         await handleUpdateNode(nodeId, { parent_id: newParentId });
     };
 
-    if (isLoading) return <div style={{ textAlign: "center", padding: "50px" }}>로딩 중...</div>;
+    const handleUploadSound = async (nodeId: number, formData: FormData) => {
+        const refreshedNode = await handleUploadNodeSound(nodeId, formData);
+        if (refreshedNode) setEditorMode({ mode: "edit", node: refreshedNode });
+    };
 
+    const handleDeleteSound = async (nodeId: number) => {
+        const refreshedNode = await handleDeleteNodeSound(nodeId);
+        if (refreshedNode) setEditorMode({ mode: "edit", node: refreshedNode });
+    };
+
+    if (isLoading) return <div style={{ textAlign: "center", padding: "50px" }}>로딩 중...</div>;
     if (!canView) return <div style={{ textAlign: "center", padding: "50px" }}>IVR 페이지에 대한 접근 권한이 없습니다.</div>;
 
     return (
         <div className="ivr-container">
-        <Toast toast={toast} />
+            <Toast toast={toast} />
 
-        <IvrFlowList
-            flows={flows}
-            selectedFlow={selectedFlow}
-            onSelect={handleSelectFlow}
-            onCreate={handleCreateFlow}
-            onDelete={handleDeleteFlow}
-            onClone={handleCloneFlow}
-            onToggleActive={(flowId, isActive) => handleUpdateFlow(flowId, { is_active: isActive })}
-            companyId={companyId}
-            isSystemAdmin={isSystemAdmin}
-            companies={companies}
-            filterCompanyId={filterCompanyId}
-            onFilterCompanyChange={setFilterCompanyId}
-            canCreate={canCreate}
-            canUpdate={canUpdate}
-            canDelete={canDelete}
-        />
+            <IvrFlowList
+                flows={flows}
+                selectedFlow={selectedFlow}
+                onSelect={handleSelectFlow}
+                onCreate={handleCreateFlow}
+                onDelete={handleDeleteFlow}
+                onClone={handleCloneFlow}
+                onToggleActive={(flowId, isActive) => handleUpdateFlow(flowId, { is_active: isActive })}
+                companyId={companyId}
+                isSystemAdmin={isSystemAdmin}
+                companies={companies}
+                filterCompanyId={filterCompanyId}
+                onFilterCompanyChange={setFilterCompanyId}
+                canCreate={canCreate}
+                canUpdate={canUpdate}
+                canDelete={canDelete}
+            />
 
-        <IvrTreeCanvas
-            flow={selectedFlow}
-            selectedNodeId={selectedNode?.id ?? null}
-            onSelectNode={handleNodeSelect}
-            onAddChildNode={handleAddChildNode}
-            onAddRootNode={handleAddRootNode}
-            onReparentNode={handleReparentNode}
-            canUpdate={canUpdate}
-        />
+            <IvrTreeCanvas
+                flow={selectedFlow}
+                selectedNodeId={selectedNode?.id ?? null}
+                onSelectNode={handleNodeSelect}
+                onAddChildNode={handleAddChildNode}
+                onAddRootNode={handleAddRootNode}
+                onReparentNode={handleReparentNode}
+                canUpdate={canUpdate}
+            />
 
-        <IvrNodeEditor
-            editorMode={editorMode}
-            onSaveAdd={handleSaveAdd}
-            onSaveEdit={handleSaveEdit}
-            onDelete={handleDeleteNodeAndClose}
-            onClose={() => setEditorMode(null)}
-            canUpdate={canUpdate}
-            canDelete={canDelete}
-        />
+            <IvrNodeEditor
+                editorMode={editorMode}
+                onSaveAdd={handleSaveAdd}
+                onSaveEdit={handleSaveEdit}
+                onDelete={handleDeleteNodeAndClose}
+                onClose={() => setEditorMode(null)}
+                canUpdate={canUpdate}
+                canDelete={canDelete}
+                onUploadSound={handleUploadSound}
+                onDeleteSound={handleDeleteSound}
+            />
         </div>
     );
 }

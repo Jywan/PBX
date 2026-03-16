@@ -19,14 +19,22 @@ from app.deps import get_current_user, require_permission
 router = APIRouter(prefix="/api/v1/ivr", tags=["IVR"], dependencies=[Depends(get_current_user)],)
 
 
+# 노드 포함 플로우 조회 헬퍼
+def _flow_stmt(condition):
+    return (
+        select(IvrFlow)
+        .where(condition)
+        .options(selectinload(IvrFlow.nodes).selectinload(IvrNode.sound))
+    )
+
 @router.get("/flows", response_model=List[IvrFlowResponse])
 async def list_flows(
     company_id: Optional[int] = Query(None),
     include_presets: bool = Query(True),
     db: AsyncSession = Depends(get_db),
     _: object = Depends(require_permission("ivr-detail")),
-): 
-    from sqlalchemy import or_
+):
+    from sqlalchemy import or_, and_
     conditions = []
     if company_id is not None:
         if include_presets:
@@ -39,7 +47,7 @@ async def list_flows(
     stmt = (
         select(IvrFlow)
         .where(*conditions)
-        .options(selectinload(IvrFlow.nodes))
+        .options(selectinload(IvrFlow.nodes).selectinload(IvrNode.sound))
         .order_by(IvrFlow.is_preset.desc(), IvrFlow.name)
     )
     result = await db.execute(stmt)
@@ -50,31 +58,25 @@ async def list_flows(
 
 
 @router.post("/flows", response_model=IvrFlowResponse)
-async def created_flow(
-    data: IvrFlowCreate, 
-    db: AsyncSession = Depends(get_db), 
+async def create_flow(
+    data: IvrFlowCreate,
+    db: AsyncSession = Depends(get_db),
     _: object = Depends(require_permission("ivr-create")),
 ):
-    flow = IvrFlow(**data.model_dump())
+    flow = IvrFlow(**data.model_dump)
     db.add(flow)
     await db.commit()
-    stmt = select(IvrFlow).where(IvrFlow.id == flow.id).options(selectinload(IvrFlow.nodes))
-    result = await db.execute(stmt)
+    result = await db.execute(_flow_stmt(IvrFlow.id == flow.id))
     return result.scalar_one()
 
 
 @router.get("/flows/{flow_id}", response_model=IvrFlowResponse)
 async def get_flow(
-    flow_id: int, 
+    flow_id: int,
     db: AsyncSession = Depends(get_db),
     _: object = Depends(require_permission("ivr-detail")),
 ):
-    stmt = (
-        select(IvrFlow)
-        .where(IvrFlow.id == flow_id)
-        .options(selectinload(IvrFlow.nodes))
-    )
-    result = await db.execute(stmt)
+    result = await db.execute(_flow_stmt(IvrFlow.id == flow_id))
     flow = result.scalar_one_or_none()
     if not flow:
         raise HTTPException(status_code=404, detail="IVR 플로우를 찾을 수 없습니다.")
@@ -84,25 +86,20 @@ async def get_flow(
 
 @router.patch("/flows/{flow_id}", response_model=IvrFlowResponse)
 async def update_flow(
-    flow_id: int, 
-    data: IvrFlowUpdate, 
+    flow_id: int,
+    data: IvrFlowUpdate,
     db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_permission("ivr-update")),
+    _: object = Depends(require_permission("ivr-update"))
 ):
-    stmt = (
-        select(IvrFlow)
-        .where(IvrFlow.id == flow_id)
-        .options(selectinload(IvrFlow.nodes))
-    )
-    result = await db.execute(stmt)
+    result = await db.execute(_flow_stmt(IvrFlow.id == flow_id))
     flow = result.scalar_one_or_none()
     if not flow:
         raise HTTPException(status_code=404, detail="IVR 플로우를 찾을 수 없습니다.")
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(flow, key, value)
     await db.commit()
-    await db.refresh(flow)
-    return flow
+    result2 = await db.execute(_flow_stmt(IvrFlow.id == flow_id))
+    return result2.scalar_one()
 
 
 @router.delete("/flows/{flow_id}")
@@ -122,18 +119,13 @@ async def delete_flow(
 
 @router.post("/flows/{flow_id}/clone", response_model=IvrFlowResponse)
 async def clone_flow(
-    flow_id: int, 
+    flow_id: int,
     new_name: str = Query(...),
     company_id: Optional[int] = Query(None),
     db: AsyncSession = Depends(get_db),
     _: object = Depends(require_permission("ivr-create")),
 ):
-    stmt = (
-        select(IvrFlow)
-        .where(IvrFlow.id == flow_id)
-        .options(selectinload(IvrFlow.nodes))
-    )
-    result = await db.execute(stmt)
+    result = await db.execute(_flow_stmt(IvrFlow.id == flow_id))
     original = result.scalar_one_or_none()
     if not original:
         raise HTTPException(status_code=404, detail="원본 플로우를 찾을 수 없습니다.")
@@ -142,7 +134,6 @@ async def clone_flow(
     db.add(new_flow)
     await db.flush()
 
-    # 노드 재귀 복제
     all_nodes = list(original.nodes)
 
     async def clone_node(orig: IvrNode, new_parent_id: Optional[int]) -> None:
@@ -162,58 +153,57 @@ async def clone_flow(
 
     for root in [n for n in all_nodes if n.parent_id is None]:
         await clone_node(root, None)
-    
-    await db.commit()
 
-    stmt2 = (
-        select(IvrFlow)
-        .where(IvrFlow.id == new_flow.id)
-        .options(selectinload(IvrFlow.nodes))
-    )
-    result2 = await db.execute(stmt2)
+    await db.commit()
+    result2 = await db.execute(_flow_stmt(IvrFlow.id == new_flow.id))
     return result2.scalar_one()
 
 
 @router.post("/flows/{flow_id}/nodes", response_model=IvrNodeResponse)
 async def create_node(
-    flow_id: int, 
-    data: IvrNodeCreate, 
+    flow_id: int,
+    data: IvrNodeCreate,
     db: AsyncSession = Depends(get_db),
     _: object = Depends(require_permission("ivr-update")),
 ):
     check = await db.execute(select(IvrFlow).where(IvrFlow.id == flow_id))
     if not check.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="IVR 플로우를 찾을 수 없습니다.")
-    node = IvrNode(flow_id=flow_id, **data.model_dump())
+    node= IvrNode(flow_id=flow_id, **data.model_dump())
     db.add(node)
     await db.commit()
-    await db.refresh(node)
-    return node
+    stmt = select(IvrNode).where(IvrNode.id == node.id).options(selectinload(IvrNode.sound))
+    result = await db.execute(stmt)
+    return result.scalar_one()
 
 
 @router.patch("/nodes/{node_id}", response_model=IvrNodeResponse)
 async def update_node(
-    node_id: int, 
-    data: IvrNodeUpdate, 
+    node_id: int,
+    data: IvrNodeUpdate,
     db: AsyncSession = Depends(get_db),
     _: object = Depends(require_permission("ivr-update")),
 ):
-    result = await db.execute(select(IvrNode).where(IvrNode.id == node_id))
+    result = await db.execute(
+        select(IvrNode).where(IvrNode.id == node_id).options(selectinload(IvrNode.sound))
+    )
     node = result.scalar_one_or_none()
     if not node:
         raise HTTPException(status_code=404, detail="노드를 찾을 수 없습니다.")
-    for key, value in data.model_dump(exclude_unset=True).items():
+    for key,value in data.model_dump(exclude_unset=True).items():
         setattr(node, key, value)
     await db.commit()
-    await db.refresh(node)
-    return node
+    result2 = await db.execute(
+        select(IvrNode).where(IvrNode.id == node_id).options(selectinload(IvrNode.sound))
+    )
+    return result2.scalar_one()
 
 
 @router.delete("/nodes/{node_id}")
 async def delete_node(
-    node_id: int, 
+    node_id: int,
     db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_permission("ivr-update"))
+    _: object = Depends(require_permission("ivr-update")),
 ):
     result = await db.execute(select(IvrNode).where(IvrNode.id == node_id))
     node = result.scalar_one_or_none()
@@ -221,36 +211,36 @@ async def delete_node(
         raise HTTPException(status_code=404, detail="노드를 찾을 수 없습니다.")
     await db.delete(node)
     await db.commit()
-    return {"message": "노드 삭제 완료"}
+    return {"노드 삭제 완료"}
 
 
-@router.get("/sounds", response_model=list[IvrSoundResponse])
-async def list_sounds(
-    company_id: Optional[int] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_permission("ivr-detail")),
-):
-    conditions = []
-    if company_id is not None:
-        conditions.append(IvrSound.company_id == company_id)
-    stmt = select(IvrSound).where(*conditions).order_by(IvrSound.created_at.desc())
-    result = await db.execute(stmt)
-    return result.scalars().all()
-
-
-@router.post("/sounds", response_model=IvrSoundResponse)
-async def upload_sound(
+@router.post("/nodes/{node_id}/sound", response_model=IvrSoundResponse)
+async def upload_node_sound(
+    node_id: int,
     name: str = Form(...),
-    company_id: Optional[int] = Form(None),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_permission("ivr-create")),
+    _: object = Depends(require_permission("ivr-update"))
 ):
+    node = await db.get(IvrNode, node_id)
+    if not node:
+        raise HTTPException(status_code=404, detail="노드를 찾을 수 없습니다.")
+    
+    # 기존 사운드 삭제
+    existing_result = await db.execute(select(IvrSound).where(IvrSound.node_id == node_id))
+    existing = existing_result.scalar_one_or_none()
+    if existing:
+        settings =get_settings()
+        old_path = os.path.join(settings.sounds_dir, existing.filename)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+        await db.delete(existing)
+        await db.flush()
+
     settings = get_settings()
-    ext = os.path.splitext(file.filename or "")[1].lower() or ".wav"
+    ext = os.path.splitext(file.filename or "")[1].lower or ".wav"
     unique_filename = f"{uuid.uuid4().hex}{ext}"
-    subdir = str(company_id) if company_id else "global"
-    dir_path = os.path.join(settings.sounds_dir, subdir)
+    dir_path = os.path.join(settings.sounds_dir, str(node_id))
     os.makedirs(dir_path, exist_ok=True)
     file_path = os.path.join(dir_path, unique_filename)
 
@@ -258,28 +248,29 @@ async def upload_sound(
         shutil.copyfileobj(file.file, f)
 
     sound = IvrSound(
-        company_id=company_id,
+        node_id=node_id,
         name=name,
-        filename=f"{subdir}/{unique_filename}",
+        filename=f"{node_id}/{unique_filename}",
         original_filename=file.filename or unique_filename,
     )
-    db.add(sound)
+
+    db.add()
     await db.commit()
     await db.refresh(sound)
     return sound
 
 
-@router.delete("/sounds/{sound_id}", status_code=204)
-async def delete_sound(
-    sound_id: int,
+@router.delete("/nodes/{node_id}/sound", status_code=204)
+async def delete_node_sound(
+    node_id: int,
     db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_permission("ivr-delete")),
+    _: object = Depends(require_permission("ivr-update")),
 ):
-    settings = get_settings()
-    result = await db.execute(select(IvrSound).where(IvrSound.id == sound_id))
+    result = await db.execute(select(IvrSound).where(IvrSound.node_id == node_id))
     sound = result.scalar_one_or_none()
     if not sound:
         raise HTTPException(status_code=404, detail="음성 파일을 찾을 수 없습니다.")
+    settings = get_settings()
     file_path = os.path.join(settings.sounds_dir, sound.filename)
     if os.path.exists(file_path):
         os.remove(file_path)
