@@ -1,0 +1,364 @@
+/* ============================
+   큐관리 레이아웃
+   ============================ */
+   .queue-container {
+    display: flex;
+    height: 100%;
+    gap: 16px;
+    overflow: hidden;
+}
+
+/* ============================
+   왼쪽 큐 목록
+   ============================ */
+.queue-list {
+    flex: 0 0 220px;
+    background: #fff;
+    border: 1px solid #e5e8eb;
+    border-radius: 16px;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+}
+
+.queue-panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #191f28;
+    margin-bottom: 4px;
+}
+
+.queue-company-select-wrap {
+    padding: 6px 0 8px;
+    border-bottom: 1px solid #e5e8eb;
+    margin-bottom: 8px;
+}
+
+.queue-company-select {
+    width: 100%;
+    font-size: 12px;
+    padding: 5px 8px;
+    border: 1px solid #d1d5da;
+    border-radius: 6px;
+    background: #f8f9fa;
+    color: #191f28;
+    cursor: pointer;
+}
+.queue-company-select:focus { border-color: #4f80ff; outline: none; }
+
+.queue-section { display: flex; flex-direction: column; gap: 2px; }
+
+.queue-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 4px 4px;
+}
+
+.queue-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8b95a1;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.btn-queue-add {
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 6px;
+    background: #4f80ff;
+    color: #fff;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s;
+}
+.btn-queue-add:hover { background: #3a6de0; }
+
+.queue-create-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0;
+}
+
+.queue-name-input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #d1d6db;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #191f28;
+    outline: none;
+    min-width: 0;
+}
+.queue-name-input:focus { border-color: #4f80ff; }
+
+.queue-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+    transition: background 0.12s;
+}
+.queue-item:hover { background: #f3f4f6; }
+.queue-item.active { background: #eef2ff; color: #191f28; font-weight: 600; }
+
+.queue-active-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.queue-active-dot.on  { background: #22c55e; }
+.queue-active-dot.off { background: #d1d5db; }
+
+.queue-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.queue-item-actions {
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+.queue-item:hover .queue-item-actions { opacity: 1; }
+
+.btn-queue-icon {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    transition: background 0.1s;
+}
+.btn-queue-icon:hover { background: #e5e8eb; }
+.btn-queue-icon.btn-danger:hover { background: #fee2e2; }
+
+.queue-empty-hint {
+    font-size: 12px;
+    color: #8b95a1;
+    padding: 8px 4px;
+    text-align: center;
+}
+
+/* ============================
+   오른쪽 상세 영역
+   ============================ */
+.queue-detail-empty {
+    flex: 1;
+    background: #f9fafb;
+    border: 1px solid #e5e8eb;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8b95a1;
+    font-size: 14px;
+}
+
+.queue-detail-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    min-width: 0;
+}
+
+/* ============================
+   큐 에디터
+   ============================ */
+.queue-editor {
+    background: #fff;
+    border: 1px solid #e5e8eb;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.queue-editor-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #191f28;
+    margin-bottom: 4px;
+}
+
+.queue-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.queue-field-row {
+    display: flex;
+    gap: 12px;
+}
+.queue-field-row .queue-field-group { flex: 1; }
+
+.queue-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.queue-field-input,
+.queue-field-select {
+    padding: 7px 10px;
+    border: 1px solid #e5e8eb;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #191f28;
+    background: #f9fafb;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.12s, background 0.12s;
+}
+.queue-field-input:focus,
+.queue-field-select:focus { border-color: #4f80ff; background: #fff; }
+.queue-field-input:disabled,
+.queue-field-select:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.queue-editor-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
+}
+
+.btn-queue-save {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #4f80ff;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.btn-queue-save:hover { background: #3a6de0; }
+
+.btn-queue-confirm {
+    padding: 5px 10px;
+    background: #4f80ff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s;
+}
+.btn-queue-confirm:hover { background: #3a6de0; }
+
+.btn-queue-cancel {
+    padding: 5px 10px;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s;
+}
+.btn-queue-cancel:hover { background: #e5e7eb; }
+
+/* ============================
+   멤버 목록
+   ============================ */
+.queue-member-section {
+    background: #fff;
+    border: 1px solid #e5e8eb;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.queue-member-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.queue-member-add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: #f9fafb;
+    border: 1px solid #e5e8eb;
+    border-radius: 10px;
+}
+
+.queue-member-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.queue-member-table th {
+    text-align: left;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #8b95a1;
+    border-bottom: 1px solid #e5e8eb;
+}
+
+.queue-member-table td {
+    padding: 8px 10px;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.queue-member-table tr:last-child td { border-bottom: none; }
+
+.btn-queue-pause {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.btn-queue-pause.active { background: #dcfce7; color: #16a34a; }
+.btn-queue-pause.active:hover { background: #bbf7d0; }
+.btn-queue-pause.paused { background: #fef9c3; color: #ca8a04; }
+.btn-queue-pause.paused:hover { background: #fef08a; }
+
+.queue-status-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.queue-status-badge.active { background: #dcfce7; color: #16a34a; }
+.queue-status-badge.paused { background: #fef9c3; color: #ca8a04; }

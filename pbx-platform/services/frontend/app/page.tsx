@@ -21,6 +21,7 @@ import CompanyTemplate from "@/components/templates/CompanyTemplate";
 import PermissionTemplate from "@/components/templates/PermissionTemplate";
 import UserTemplate from "@/components/templates/UserTemplate";
 import IvrTemplate from "@/components/templates/IvrTemplate";
+import QueueTemplate from "@/components/templates/QueueTemplate";
 
 // CSS
 import "@/styles/dashboard.css";
@@ -72,7 +73,7 @@ export default function HomePage() {
       case "company-info": return <CompanyTemplate onAccessDenied={() => setActiveMenu("consult")} />;
       case "company-user": return <UserTemplate onAccessDenied={() => setActiveMenu("consult")} />;
       case "company-ivr": return <IvrTemplate />;
-      case "company-queue": return <div className="placeholder">Queue 관리 화면 준비중</div>;
+      case "company-queue": return <QueueTemplate />;
       
       case "setting-perm-template": return <PermissionTemplate />;
       default: return <ConsultTemplate />;
