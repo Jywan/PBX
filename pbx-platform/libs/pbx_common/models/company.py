@@ -9,6 +9,7 @@ from .base import Base
 
 if TYPE_CHECKING:
     from .user import User
+    from .queue import Queue
 
 class Company(Base):
     __tablename__ = "company"
@@ -32,6 +33,7 @@ class Company(Base):
                                                 onupdate=func.now())
 
     users: Mapped[list["User"]] = relationship("User", back_populates="company")
+    queues: Mapped[list["Queue"]] = relationship("Queue", back_populates="company")
     
 Index("idx_company_name", Company.company_name)
 Index("idx_company_is_active", Company.is_active)

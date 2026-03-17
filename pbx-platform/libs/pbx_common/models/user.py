@@ -11,6 +11,7 @@ from .base import Base
 if TYPE_CHECKING:
     from .company import Company
     from .permission import Permission
+    from .queue import QueueMember
 
 # --- Enums ---
 class UserRole(enum.Enum):
@@ -50,6 +51,7 @@ class User(Base):
 
     company: Mapped["Company"] = relationship("Company", back_populates="users")
     permissions: Mapped[List["Permission"]] = relationship("Permission", secondary="user_permissions", back_populates="users", lazy="selectin")
+    queue_members: Mapped[List["QueueMember"]] = relationship("QueueMember", back_populates="user") 
 
 Index("idx_user_account", User.account)
 Index("idx_user_exten", User.exten)

@@ -5,6 +5,7 @@ from .customer import Customer, CustomerGroup
 from .user import User, UserStatus, UserStatusLog, UserRole, LoginStatus, UserActivity
 from .permission import Permission, UserPermission, PermissionType
 from .ivr import IvrFlow, IvrNode, IvrSound
+from .queue import Queue, QueueMember
 
 __all__ = [
     "Base",
@@ -14,4 +15,5 @@ __all__ = [
     "User", "UserStatus", "UserStatusLog", "UserRole", "LoginStatus", "UserActivity",
     "Permission", "UserPermission", "PermissionType",
     "IvrFlow", "IvrNode", "IvrSound",
+    "Queue", "QueueMember",
 ]
