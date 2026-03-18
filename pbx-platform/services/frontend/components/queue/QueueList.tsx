@@ -31,7 +31,7 @@ export default function QueueList({
 
     const handleCreate = () => {
         if (!newName.trim()) return;
-        onCreate({ name: newName.trim() });
+        onCreate({ name: newName.trim(), company_id: filterCompanyId ?? undefined });
         setNewName("");
         setShowCreate(false);
     };

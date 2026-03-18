@@ -1,7 +1,8 @@
 import apiClient from "./client";
+import { API_URL } from "@/lib/config";
 import type { Queue, QueueCreate, QueueUpdate, QueueMember, QueueMemberCreate } from "@/types/queue";
 
-const BASE = "/api/v1/queues";
+const BASE = `${API_URL}/api/v1/queues`;
 
 export const fetchQueues = async (
     token: string,

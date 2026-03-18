@@ -40,7 +40,7 @@ class QueueMember(Base):
     __tablename__ = "queue_members"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    queue_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    queue_id: Mapped[int] = mapped_column(Integer, ForeignKey("queues.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
     interface: Mapped[str] = mapped_column(Text, nullable=False)
     membername: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

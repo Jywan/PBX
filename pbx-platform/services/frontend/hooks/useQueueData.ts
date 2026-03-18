@@ -7,7 +7,6 @@ import {
     deleteQueue, addQueueMember, removeQueueMember, updateQueueMember,
 } from "@/lib/api/queue";
 import type { Queue, QueueCreate, QueueUpdate, QueueMemberCreate } from "@/types/queue";
-import { ReceiptTurkishLiraIcon } from "lucide-react";
 
 export function useQueueData(showToast: (msg: string, type: "success" | "error") => void) {
     const { token, companyId, isSystemAdmin } = useAuth();
@@ -55,7 +54,7 @@ export function useQueueData(showToast: (msg: string, type: "success" | "error")
             });
             await loadQueues();
             await handleSelectQueue(created);
-            showToast("큐가 생성되었습니다", "error");
+            showToast("큐가 생성되었습니다", "success");
         } catch {
             showToast("큐 생성 실패", "error");
         }

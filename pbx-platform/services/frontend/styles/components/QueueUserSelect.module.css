@@ -1,0 +1,144 @@
+.dropdown {
+    position: relative;
+}
+
+.trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    border: 1px solid #e5e8eb;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #191f28;
+    background: #f9fafb;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.12s, background 0.12s;
+}
+.trigger:hover,
+.trigger:focus {
+    border-color: #4f80ff;
+    background: #fff;
+    outline: none;
+}
+
+.triggerItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.placeholder {
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+.arrow {
+    font-size: 10px;
+    color: #8b95a1;
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
+.list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e5e8eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    z-index: 10000;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px;
+    list-style: none;
+    margin: 0;
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+.item:hover {
+    background: #f3f4f6;
+}
+.itemSelected {
+    background: #eef2ff;
+    color: #191f28;
+    font-weight: 600;
+}
+.itemDisabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* 활성/비활성 점 */
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.dotActive {
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+.dotInactive {
+    background: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.userName {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.exten {
+    font-size: 12px;
+    color: #6b7280;
+    flex-shrink: 0;
+}
+
+.badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #fee2e2;
+    color: #dc2626;
+    flex-shrink: 0;
+}
+.badgeGray {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+/* 등급 뱃지 */
+.roleManager {
+    background: #eff6ff;
+    color: #2563eb;
+}
+.roleAgent {
+    background: #f0fdf4;
+    color: #16a34a;
+}
+.roleAdmin {
+    background: #faf5ff;
+    color: #7c3aed;
+}

@@ -8,7 +8,7 @@ class UserSummary(BaseModel):
     exten: Optional[str]
 
     class Config:
-        from_attribute = True
+        from_attributes = True
 
 class QueueMemberCreate(BaseModel):
     user_id: Optional[int] = None
@@ -41,7 +41,7 @@ class QueueCreate(BaseModel):
     timeout: int = 30
     wrapuptime: int = 0
     maxlen: int =0
-    music_on_hole: Optional[str] = None
+    music_on_hold: Optional[str] = None
 
 class QueueUpdate(BaseModel):
     name: Optional[str] = None
@@ -50,7 +50,7 @@ class QueueUpdate(BaseModel):
     wrapuptime: Optional[int] = None
     maxlen: Optional[int] = None
     music_on_hold: Optional[str] = None
-    is_active: Optional[str] = None
+    is_active: Optional[bool] = None
 
 class QueueResponse(BaseModel):
     id: int
@@ -60,7 +60,7 @@ class QueueResponse(BaseModel):
     timeout: int
     wrapuptime: int
     maxlen: int
-    music_on_hole: Optional[str]
+    music_on_hold: Optional[str]
     is_active: bool
     created_at: datetime
     updated_at: datetime

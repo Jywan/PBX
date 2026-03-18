@@ -75,6 +75,7 @@ export default function QueueTemplate() {
                     />
                     <QueueMemberList
                         queue={selectedQueue}
+                        token={token!}
                         onAdd={handleAddMember}
                         onRemove={handleRemoveMember}
                         onTogglePause={handleTogglePause}

@@ -14,8 +14,6 @@ const GROUPS: CustomerGroup[] = [
     { id: "blacklist", label: "블랙리스트", color: "#ef4444" },
 ];
 
-const MOCK_CALLS: CallHistory[] = [];
-
 const EMPTY_FORM: Partial<Customer> = {
     name: "", phone: "", email: null, company_id: null, group: "normal", memo: null,
 };
@@ -164,7 +162,7 @@ export function useCustomerData({ token, showToast, isSystemAdmin, companyId }: 
     };
 
     return {
-        GROUPS, MOCK_CALLS, companies, isSystemAdmin,
+        GROUPS, companies, isSystemAdmin,
         groupCounts, filtered, selectedCustomer, selectedId,
         selectedGroup, search, setSearch,
         editMode, editForm, setEditForm,

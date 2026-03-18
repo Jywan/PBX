@@ -2,7 +2,6 @@
 
 import { FileText, BookOpen, PhoneOff, Clock } from "lucide-react";
 import { formatTimer } from "@/lib/utils/date";
-import { MOCK_SCRIPT } from "@/hooks/useConsultData";
 import type { WaitingCall } from "@/hooks/useConsultData";
 
 interface ConsultWorkProps {
@@ -76,7 +75,10 @@ export default function ConsultWork({
                                 </textarea>
                             </div>
                         ) : (
-                            <pre className="script-viewer">{MOCK_SCRIPT}</pre>
+                            <div className="consult-empty-state">
+                                    <BookOpen size={32} strokeWidth={1.5} />
+                                    <p>등록된 스크립트가 없습니다.</p>
+                                </div>
                         )}
                     </div>
                 </>

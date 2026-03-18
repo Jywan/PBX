@@ -22,7 +22,7 @@ def _queue_stmt(condition):
 
 @router.get("", response_model=List[QueueResponse])
 async def list_queues(
-    company_id: Optional[int] = Queue(None),
+    company_id: Optional[int] = Query(None),
     db: AsyncSession = Depends(get_db),
     _: object = Depends(require_permission("queue-detail")),
 ): 
@@ -71,7 +71,7 @@ async def update_queue(
     queue_id: int,
     data: QueueUpdate,
     db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_permission("queue_update")),
+    _: object = Depends(require_permission("queue-update")),
 ):
     result = await db.execute(_queue_stmt(Queue.id == queue_id))
     queue = result.scalar_one_or_none()
@@ -97,3 +97,77 @@ async def delete_queue(
     await db.delete(queue)
     await db.commit()
     return { "message": f"'{queue.name}' 삭제 완료" }
+
+
+@router.post("/{queue_id}/members", response_model=QueueMemberResponse)
+async def add_member(
+    queue_id: int,
+    data: QueueMemberCreate,
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("queue-update")),
+):
+    check = await db.execute(select(Queue).where(Queue.id == queue_id))
+    if not check.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="큐를 찾을 수 없습니다.")
+    
+    # user_id 있으면 interface/membername 자동 설정
+    interface = data.interface
+    membername = data.membername
+    if data.user_id:
+        user = await db.get(User, data.user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+        if user.exten:
+            interface = f"SIP/{user.exten}"
+        membername = membername or user.name
+    
+    member = QueueMember(
+        queue_id=queue_id,
+        user_id=data.user_id,
+        interface=interface,
+        membername=membername,
+        penalty=data.penalty,
+    )
+    db.add(member)
+    await db.commit()
+    result = await db.execute(
+        select(QueueMember).where(QueueMember.id == member.id).options(selectinload(QueueMember.user))
+    )
+    return result.scalar_one()
+
+
+@router.patch("/members/{member_id}", response_model=QueueMemberResponse)
+async def update_member(
+    member_id: int,
+    data: QueueMemberUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("queue-update"))
+):
+    result = await db.execute(
+        select(QueueMember).where(QueueMember.id == member_id).options(selectinload(QueueMember.user))
+    )
+    member = result.scalar_one_or_none()
+    if not member:
+        raise HTTPException(status_code=404, detail="멤버를 찾을 수 업습니다.")
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(member, key, value)
+    await db.commit()
+    result2 = await db.execute(
+        select(QueueMember).where(QueueMember.id == member_id).options(selectinload(QueueMember.user))
+    )
+    return result2.scalar_one()
+
+
+@router.delete("/members/{member_id}")
+async def remove_member(
+    member_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: object = Depends(require_permission("queue-update")),
+):
+    result = await db.execute(select(QueueMember).where(QueueMember.id == member_id))
+    member = result.scalar_one_or_none()
+    if not member:
+        raise HTTPException(status_code=404, detail="멤버를 찾을 수 없습니다.")
+    await db.delete(member)
+    await db.commit()
+    return { "message": "멤버 삭제 완료" }

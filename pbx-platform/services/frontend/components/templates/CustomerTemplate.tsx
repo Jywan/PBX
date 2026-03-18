@@ -22,7 +22,7 @@ export default function CustomerTemplate() {
     const canDelete = isSystemAdmin || hasPermission("customer-delete");
 
     const {
-        GROUPS, MOCK_CALLS, companies,
+        GROUPS, companies,
         groupCounts, filtered, selectedCustomer, selectedId,
         selectedGroup, search, setSearch,
         editMode, editForm, setEditForm,
@@ -78,7 +78,7 @@ export default function CustomerTemplate() {
                 editForm={editForm}
                 groups={GROUPS}
                 companies={companies}
-                calls={MOCK_CALLS}
+                calls={[]}
                 setEditForm={setEditForm}
                 onEditStart={handleEditStart}
                 onEditCancel={handleEditCancel}

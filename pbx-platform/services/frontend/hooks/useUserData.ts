@@ -52,7 +52,7 @@ export function useUserData({ token, isSystemAdmin, companyId, authLoading, show
     const [sortField, setSortField] = useState<SortField>("created_at");
     const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const [pageSize, setPageSize] = useState(10);
 
     const fetchInitialData = useCallback(async () => {
         if (!token) return;
@@ -257,10 +257,10 @@ export function useUserData({ token, isSystemAdmin, companyId, authLoading, show
             return sortOrder === "asc" ? (aValue > bValue ? 1 : -1) : (aValue < bValue ? 1 : -1);
         });
     
-    const totalPages = Math.ceil(filteredAndSortedUsers.length / itemsPerPage);
+    const totalPages = Math.max(1, Math.ceil(filteredAndSortedUsers.length / pageSize));
     const paginatedUsers = filteredAndSortedUsers.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
     );
 
     return {
@@ -273,7 +273,7 @@ export function useUserData({ token, isSystemAdmin, companyId, authLoading, show
         filterRole, setFilterRole,
         showInactive, setShowInactive,
         sortField, sortOrder,
-        currentPage, setCurrentPage, totalPages, paginatedUsers, filteredAndSortedUsers,
+        currentPage, setCurrentPage, pageSize, setPageSize, totalPages, paginatedUsers, filteredAndSortedUsers,
         handleSave, handleDeleteClick, handleRestoreClick, openModal, handleSort,
         confirmOpen, confirmMessage, onConfirm, closeConfirm,
         getRoleBadgeColor, getRoleLabel,

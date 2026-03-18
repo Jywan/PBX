@@ -16,7 +16,7 @@ import UserFormModal from "@/components/user/UserFormModal";
 import UserPermissionModal from "@/components/user/UserPermissionModal";
 import UserHeader from "@/components/user/UserHeader";
 import UserListSection from "@/components/user/UserListSection";
-import UserPagination from "@/components/user/UserPagination";
+import Pagination from "@/components/common/Pagination";
 
 interface UserTemplateProps {
     onAccessDenied?: () => void;
@@ -44,7 +44,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
         filterRole, setFilterRole,
         showInactive, setShowInactive,
         sortField, sortOrder,
-        currentPage, setCurrentPage, totalPages, paginatedUsers, filteredAndSortedUsers,
+        currentPage, setCurrentPage, pageSize, setPageSize, totalPages, paginatedUsers, filteredAndSortedUsers,
         handleSave, handleDeleteClick, handleRestoreClick, openModal, handleSort,
         confirmOpen, confirmMessage, onConfirm, closeConfirm,
         getRoleBadgeColor, getRoleLabel,
@@ -138,13 +138,15 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                             getRoleBadgeColor={getRoleBadgeColor}
                             getRoleLabel={getRoleLabel}
                         />
-                        <UserPagination
-                            loading={loading}
-                            totalCount={filteredAndSortedUsers.length}
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                        />
+                        {!loading && filteredAndSortedUsers.length > 0 && (
+                            <Pagination
+                                page={currentPage}
+                                totalPages={totalPages}
+                                pageSize={pageSize}
+                                onPageChange={setCurrentPage}
+                                onPageSizeChange={setPageSize}
+                            />
+                        )}
                     </section>
 
                     <UserFormModal
