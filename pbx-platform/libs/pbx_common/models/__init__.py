@@ -6,6 +6,7 @@ from .user import User, UserStatus, UserStatusLog, UserRole, LoginStatus, UserAc
 from .permission import Permission, UserPermission, PermissionType
 from .ivr import IvrFlow, IvrNode, IvrSound
 from .queue import Queue, QueueMember
+from .asterisk import PsEndpoint, PsAuth, PsAor, PsContact
 
 __all__ = [
     "Base",
@@ -16,4 +17,5 @@ __all__ = [
     "Permission", "UserPermission", "PermissionType",
     "IvrFlow", "IvrNode", "IvrSound",
     "Queue", "QueueMember",
+    "PsEndpoint", "PsAuth", "PsAor", "PsContact",
 ]

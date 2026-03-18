@@ -30,6 +30,7 @@ export function useUserData({ token, isSystemAdmin, companyId, authLoading, show
     const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [extensionError, setExtensionError] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [restoringId, setRestoringId] = useState<number | null>(null);
 
@@ -135,7 +136,11 @@ export function useUserData({ token, isSystemAdmin, companyId, authLoading, show
                     errorMessage = errorData.detail;
                 }
             }
-            showToast(errorMessage, "error");
+            if (errorMessage.includes("내선번호")) {
+                setExtensionError(errorMessage);
+            } else {
+                showToast(errorMessage, "error");
+            }
         } finally {
             setSaving(false);
         }
@@ -274,6 +279,7 @@ export function useUserData({ token, isSystemAdmin, companyId, authLoading, show
         showInactive, setShowInactive,
         sortField, sortOrder,
         currentPage, setCurrentPage, pageSize, setPageSize, totalPages, paginatedUsers, filteredAndSortedUsers,
+        extensionError, setExtensionError,
         handleSave, handleDeleteClick, handleRestoreClick, openModal, handleSort,
         confirmOpen, confirmMessage, onConfirm, closeConfirm,
         getRoleBadgeColor, getRoleLabel,

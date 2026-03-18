@@ -5,7 +5,7 @@ from sqlalchemy import select
 from datetime import datetime
 
 from pbx_common.utils.security import SECRET_KEY, ALGORITHM
-from pbx_common.models import User, Company, UserStatus, UserStatusLog, LoginStatus, UserActivity, UserRole, UserPermission
+from pbx_common.models import User, Company, UserStatus, UserStatusLog, LoginStatus, UserActivity, UserRole, UserPermission, PsEndpoint, PsAuth, PsAor
 from pbx_common.utils.security import hash_password
 from app.db.session import get_db
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
@@ -31,6 +31,11 @@ async def create_user(
     if not company:
         raise HTTPException(status_code=404, detail="존재하지 않는 업체 ID입니다.")
 
+    if user_in.extension:
+        q_exten = select(User).where(User.exten == user_in.extension)
+        if (await db.execute(q_exten)).scalars().first():
+            raise HTTPException(status_code=400, detail="이미 사용 중인 내선번호입니다.")
+
     # API 필드명 -> DB 필드명 매핑
     new_user = User(
         account=user_in.username,  # username -> account
@@ -42,6 +47,9 @@ async def create_user(
     )
     db.add(new_user)
     await db.flush()
+
+    if user_in.extension:
+        await _sync_pjsip(db, user_in.extension, user_in.password)
 
     now = datetime.now()
     db.add(UserStatus(user_id=new_user.id))
@@ -149,6 +157,21 @@ async def update_user(
             raise HTTPException(status_code=404, detail="존재하지 않는 업체 ID입니다.")
         user.company_id = user_in.company_id
 
+    # 내선번호 업데이트
+    if user_in.extension is not None:
+        if user_in.extension and user_in.extension != user.exten:
+            q_exten = select(User).where(User.exten == user_in.extension, User.id != user_id)
+            if (await db.execute(q_exten)).scalars().first():
+                raise HTTPException(status_code=400, detail="이미 사용 중인 내선번호입니다.")
+        old_exten = user.exten
+        user.exten = user_in.extension
+        if old_exten and old_exten != user_in.extension:
+            await _delete_pjsip(db, old_exten)
+        if user_in.extension:
+            sip_pass = user_in.password if user_in.password else None
+            if sip_pass:
+                await _sync_pjsip(db, user_in.extension, sip_pass)
+
     await db.commit()
     await db.refresh(user)
 
@@ -227,3 +250,37 @@ async def get_user_permissions(
     permission_ids = [row[0] for row in result.all()]
 
     return {"permission_ids": permission_ids}
+
+
+async def _sync_pjsip(db: AsyncSession, exten: str, password: str):
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    await db.execute(
+        pg_insert(PsAor).values(
+            id=exten, max_contacts=1, remove_existing="yes"
+        ).on_conflict_do_nothing()
+    )
+    await db.execute(
+        pg_insert(PsAuth).values(
+            id=f"{exten}-auth", auth_type="userpass", username=exten, password=password
+        ).on_conflict_do_update(index_elements=["id"], set_={"password": password})
+    )
+    await db.execute(
+        pg_insert(PsEndpoint).values(
+            id=exten,
+            transport="transport-udp",
+            aors=exten,
+            auth=f"{exten}-auth",
+            context="internal",
+            disallow="all",
+            allow="ulaw",
+            direct_media="no",
+            rtp_symmetric="yes"
+        ).on_conflict_do_nothing()
+    )
+
+async def _delete_pjsip(db: AsyncSession, exten: str):
+    from sqlalchemy import delete
+    await db.execute(delete(PsEndpoint).where(PsEndpoint.id == exten))
+    await db.execute(delete(PsAuth).where(PsAuth.id == f"{exten}-auth"))
+    await db.execute(delete(PsAor).where(PsAor.id == exten))

@@ -11,7 +11,7 @@ class AriClient:
     ari_app: str
     api_key: str        # user""
 
-    _client: Optional[httpx.AxyncClient] = None
+    _client: Optional[httpx.AsyncClient] = None
 
     async def start(self) -> None:
         """애플리케이션 시작 시 한 번만 호출: HTTP 세션 생성"""

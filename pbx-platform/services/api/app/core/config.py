@@ -6,6 +6,13 @@ class Settings(BaseSettings):
     database_url: str
     sounds_dir: str = "/sounds"
 
+    # ARI
+    ari_host: str = "localhost"
+    ari_port: str = "8088"
+    ari_user: str = "ari-user"
+    ari_pass: str = ""
+    ari_app: str = "pbx_ari"
+
     # 선택 변수 (기본값 있음)
     api_title: str = "PBX API"
     api_version: str = "0.1.0"

@@ -85,6 +85,11 @@ class CallService:
             return
         
     async def _on_stasis_start(self, ev: ParsedEvent) -> None:
+
+        if ev.app_args and ev.app_args[0] == "direct":
+            print(f"[direct_call] channel={ev.channel_id} target={ev.app_args[1] if len(ev.app_args) > 1 else '?'}")
+            return
+
         if not ev.channel_id:
             return
 

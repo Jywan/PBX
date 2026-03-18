@@ -1,3 +1,5 @@
+import httpx
+
 from datetime import date
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -8,6 +10,7 @@ from pbx_common.models import Call
 from app.db.session import get_db
 from app.schemas.call import CallResponse
 from app.deps import get_current_user
+from app.core.config import get_settings
 
 router = APIRouter(prefix="/api/v1", tags=["Calls"], dependencies=[Depends(get_current_user)])
 
@@ -63,3 +66,22 @@ async def read_calls(
     except Exception as e:
         print(f"Error fetching calls: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/calls/originate")
+async def originate_call(extension: str):
+    settings = get_settings()
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"http://{settings.ari_host}:{settings.ari_port}/ari/channels",
+            auth=(settings.ari_user, settings.ari_pass),
+            params={
+                "endpoint": f"PJSIP/{extension}",
+                "app": settings.ari_app,
+                "appArgs": f"direct,{extension}",
+                "callerId": "WebCall",
+                "timeout": 30,
+            }
+        )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=resp.status_code, detail=resp.text)
+    return { "status": "ringing", "extension": extension }

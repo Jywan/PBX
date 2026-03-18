@@ -12,9 +12,15 @@ interface Props {
     saving: boolean;
     canCreateUser: boolean;
     canUpdateUser: boolean;
+    extensionError?: string | null;
     onClose: () => void;
     onSave: () => void;
     onFormChange: (data: UserFormState) => void;
+}
+
+function validateExtension(value: string): string | null {
+    if (value && !/^[0-9\-]+$/.test(value)) return "숫자와 하이픈(-)만 입력 가능합니다.";
+    return null;
 }
 
 function validatePassword(password: string): string | null {
@@ -28,9 +34,10 @@ const KOREAN_REGEX = /[ㄱ-ㅎㅏ-ㅣ가-힣]/g;
 
 export default function UserFormModal({
     isOpen, isEditMode, formData, companies, saving,
-    canCreateUser, canUpdateUser, onClose, onSave, onFormChange,
+    canCreateUser, canUpdateUser, extensionError, onClose, onSave, onFormChange,
 }: Props) {
     const [passwordError, setPasswordError] = useState<string | null>(null);
+    const [extensionFormatError, setExtensionFormatError] = useState<string | null>(null);
     const [confirmPassword, setConfirmPassword] = useState("");
     const [confirmError, setConfirmError] = useState<string | null>(null);
     const [isCapsLock, setIsCapsLock] = useState(false);
@@ -42,6 +49,7 @@ export default function UserFormModal({
             setConfirmPassword("");
             setConfirmError(null);
             setIsCapsLock(false);
+            setExtensionFormatError(null);
         }
     }, [isOpen]);
 
@@ -51,12 +59,18 @@ export default function UserFormModal({
 
     const handleSaveClick = () => {
         if (passwordError) return;
+        if (extensionFormatError) return;
         if (formData.password && formData.password !== confirmPassword) {
             setConfirmError("비밀번호가 일치하지 않습니다.");
             return;
         }
         setConfirmError(null);
         onSave();
+    };
+
+    const handleExtensionChange = (value: string) => {
+        setExtensionFormatError(validateExtension(value));
+        onFormChange({ ...formData, extension: value });
     };
 
     const handlePasswordChange = (value: string) => {
@@ -187,11 +201,16 @@ export default function UserFormModal({
                         <label className="user-form-label">내선 번호</label>
                         <input
                             value={formData.extension}
-                            onChange={e => onFormChange({ ...formData, extension: e.target.value })}
+                            onChange={e => handleExtensionChange(e.target.value)}
                             placeholder="예: 201"
                             disabled={!canEdit}
-                            className="user-form-input"
+                            className={`user-form-input${(extensionFormatError || extensionError) ? " user-form-input--error" : ""}`}
                         />
+                        {extensionFormatError ? (
+                            <p className="user-form-error-text">{extensionFormatError}</p>
+                        ) : extensionError ? (
+                            <p className="user-form-error-text">{extensionError}</p>
+                        ) : null}
                     </div>
                     <div className="user-form-group">
                         <label className="user-form-label">권한(Role)</label>

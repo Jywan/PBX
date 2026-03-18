@@ -45,6 +45,7 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
         showInactive, setShowInactive,
         sortField, sortOrder,
         currentPage, setCurrentPage, pageSize, setPageSize, totalPages, paginatedUsers, filteredAndSortedUsers,
+        extensionError, setExtensionError,
         handleSave, handleDeleteClick, handleRestoreClick, openModal, handleSort,
         confirmOpen, confirmMessage, onConfirm, closeConfirm,
         getRoleBadgeColor, getRoleLabel,
@@ -157,9 +158,10 @@ export default function UserTemplate({ onAccessDenied }: UserTemplateProps) {
                         saving={saving}
                         canCreateUser={canCreateUser}
                         canUpdateUser={canUpdateUser}
-                        onClose={() => setIsModalOpen(false)}
+                        extensionError={extensionError}
+                        onClose={() => { setIsModalOpen(false); setExtensionError(null); }}
                         onSave={handleSave}
-                        onFormChange={setFormData}
+                        onFormChange={(data) => { setExtensionError(null); setFormData(data); }}
                     />
 
                     <UserPermissionModal
