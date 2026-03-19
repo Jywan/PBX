@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import Cookies from "js-cookie";
 
-export const useWebRTC = (roomId: string = "test_room") => {
+export const useCall = (roomId: string = "test_room") => {
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [isAudioMuted, setIsAudioMuted] = useState(false);

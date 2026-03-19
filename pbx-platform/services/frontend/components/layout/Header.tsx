@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { getUserInfoFromToken } from "@/lib/auth";
-import { useWebRTC } from "@/hooks/useWebRTC";
 import { useAuthStore } from "@/store/authStore";
 import StatusDropdown from "@/components/ui/StatusDropdown";
 import { originateCall } from "@/lib/api/calls";
@@ -22,15 +21,6 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
     const storeActivity = useAuthStore((state) => state.activity);
     const setStoreActivity = useAuthStore((state) => state.setActivity);
     const [currentActivity, setCurrentActivity] = useState<string>(storeActivity || "DISABLED");
-
-    const remoteAudioRef = useRef<HTMLAudioElement>(null);
-    const {
-        localStream,
-        remoteStream,
-        stopLocalStream,
-        isAudioMuted,
-        toggleAudio,
-    } = useWebRTC();
 
     const [dialExten, setDialExten] = useState("");
     const [dialing, setDialing] = useState(false);
@@ -55,24 +45,11 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
     };
 
     useEffect(() => {
-        if (remoteStream && remoteAudioRef.current) {
-            remoteAudioRef.current.srcObject = remoteStream;
-            handleActivityChange("ON_CALL");
-            remoteAudioRef.current.play().catch(e => console.error("🔊 재생 실패:", e));
-        }
-    }, [remoteStream]);
-
-    useEffect(() => {
         const info = getUserInfoFromToken();
         if (info) {
             setUserData({ account: info.sub, name: info.name, role: info.role });
         }
     }, []);
-
-    const handleStopCall = () => {
-        stopLocalStream();
-        handleActivityChange("POST_PROCESSING");
-    };
 
     const handleDial = async () => {
         if (!dialExten.trim()) return;
@@ -92,8 +69,6 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
     return (
         <header className="layout-header">
             <div className="header-left" style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-                <audio ref={remoteAudioRef} autoPlay playsInline />
-
                 <StatusDropdown
                     currentActivity={currentActivity}
                     onActivityChange={handleActivityChange}
@@ -118,31 +93,6 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
                         {dialing ? "발신 중..." : "📞 발신"}
                     </button>
                 </div>
-
-                {localStream && (
-                    <div className="call-active-group" style={{ display: "flex", alignItems: "center", gap: "10px", borderLeft: "1px solid #ddd", paddingLeft: "20px" }}>
-                        <div className="call-status-indicator" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span className="status-dot blink"></span>
-                            <span className="status-text" style={{ fontSize: "14px", fontWeight: "600", color: "#e74c3c" }}>
-                                {currentActivity === "CALLING" ? "연결 중..." : "통화 중"}
-                            </span>
-                        </div>
-                        <button
-                            className={`call-sub-btn ${isAudioMuted ? "muted" : ""}`}
-                            onClick={toggleAudio}
-                            style={{ padding: "4px 12px", borderRadius: "4px", fontSize: "13px" }}
-                        >
-                            {isAudioMuted ? "🔇 마이크 켬" : "🎤 음소거"}
-                        </button>
-                        <button
-                            className="call-btn stop"
-                            onClick={handleStopCall}
-                            style={{ backgroundColor: "#e74c3c", color: "#fff", padding: "4px 12px", borderRadius: "4px", fontSize: "13px", border: "none", cursor: "pointer" }}
-                        >
-                            종료
-                        </button>
-                    </div>
-                )}
             </div>
 
             <div className="header-right" style={{ display: "flex", alignItems: "center", gap: "16px" }}>

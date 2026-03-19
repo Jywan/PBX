@@ -25,7 +25,7 @@ import QueueTemplate from "@/components/templates/QueueTemplate";
 
 // CSS
 import "@/styles/dashboard.css";
-import "@/styles/webrtc.css";
+import "@/styles/call.css";
 
 export default function HomePage() {
   const { expiresAt, resetAuth } = useAuthStore();
