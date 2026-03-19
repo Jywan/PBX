@@ -5,6 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
 import { useIvrData } from "@/hooks/useIvrData";
 import { fetchCompanies } from "@/lib/api/companies";
+import { fetchQueues } from "@/lib/api/queue";
+import { fetchUsers } from "@/lib/api/users";
 import { hasPermission } from "@/lib/auth";
 import Toast from "@/components/common/Toast";
 import IvrFlowList from "@/components/ivr/IvrFlowList";
@@ -12,6 +14,9 @@ import IvrTreeCanvas from "@/components/ivr/IvrTreeCanvas";
 import IvrNodeEditor from "@/components/ivr/IvrNodeEditor";
 import type { IvrNode, IvrNodeCreate, IvrNodeUpdate } from "@/types/ivr";
 import type { Company } from "@/types/company";
+import type { Queue } from "@/types/queue";
+import type { User } from "@/types/user";
+
 import "@/styles/templates/ivr.css";
 
 type EditorMode =
@@ -22,6 +27,8 @@ export default function IvrTemplate() {
     const { token, isSystemAdmin, companyId, isLoading } = useAuth();
     const { toast, showToast } = useToast();
     const [companies, setCompanies] = useState<Company[]>([]);
+    const [queues, setQueues] = useState<Queue[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
 
     const canView   = isSystemAdmin || hasPermission("ivr-detail");
     const canCreate = isSystemAdmin || hasPermission("ivr-create");
@@ -48,6 +55,25 @@ export default function IvrTemplate() {
         handleUploadNodeSound,
         handleDeleteNodeSound,
     } = useIvrData(showToast);
+
+    useEffect(() => {
+        if (!token) return;
+        const cid = isSystemAdmin
+            ? (selectedFlow?.company_id ?? filterCompanyId ?? undefined)
+            : companyId ?? undefined;
+        fetchQueues(token, cid !== undefined ? { company_id: cid } : undefined)
+            .then(setQueues)
+            .catch(() => {});
+    }, [token, isSystemAdmin, companyId, selectedFlow, filterCompanyId]);
+
+    useEffect(() => {
+        if (!token) return;
+        const cid = isSystemAdmin
+            ? (selectedFlow?.company_id ?? undefined)
+            : companyId ?? undefined;
+        if (cid === undefined) return;
+        fetchUsers(token, cid).then(setUsers).catch(() => {});
+    }, [token, isSystemAdmin, companyId, selectedFlow]);
 
     const [editorMode, setEditorMode] = useState<EditorMode | null>(null);
 
@@ -136,6 +162,7 @@ export default function IvrTemplate() {
 
             <IvrNodeEditor
                 editorMode={editorMode}
+                queues={queues}
                 onSaveAdd={handleSaveAdd}
                 onSaveEdit={handleSaveEdit}
                 onDelete={handleDeleteNodeAndClose}
@@ -144,6 +171,7 @@ export default function IvrTemplate() {
                 canDelete={canDelete}
                 onUploadSound={handleUploadSound}
                 onDeleteSound={handleDeleteSound}
+                users={users}
             />
         </div>
     );

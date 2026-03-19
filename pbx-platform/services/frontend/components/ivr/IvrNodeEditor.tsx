@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { IvrNode, IvrNodeType, IvrNodeCreate, IvrNodeUpdate } from "@/types/ivr";
+import type { Queue } from "@/types/queue";
+import type { User } from "@/types/user";
+
+import styles from "@/styles/components/QueueUserSelect.module.css";
 
 const NODE_TYPES: { value: IvrNodeType; label: string }[] = [
     { value: "greeting", label: "안내멘트" },
@@ -27,6 +31,7 @@ type EditorMode = AddMode | EditMode;
 
 interface Props {
     editorMode: EditorMode | null;
+    queues: Queue[];
     onSaveAdd: (data: IvrNodeCreate) => void;
     onSaveEdit: (nodeId: number, data: IvrNodeUpdate) => void;
     onDelete: (nodeId: number) => void;
@@ -35,11 +40,12 @@ interface Props {
     canDelete: boolean;
     onUploadSound: (nodeId: number, formData: FormData) => Promise<void>;
     onDeleteSound: (nodeId: number) => Promise<void>;
+    users: User[];
 }
 
 export default function IvrNodeEditor({
-    editorMode, onSaveAdd, onSaveEdit, onDelete, onClose,
-    canUpdate, canDelete, onUploadSound, onDeleteSound,
+    editorMode, queues, onSaveAdd, onSaveEdit, onDelete, onClose,
+    canUpdate, canDelete, onUploadSound, onDeleteSound, users
 }: Props) {
     const [nodeType, setNodeType] = useState<IvrNodeType>("greeting");
     const [name, setName] = useState("");
@@ -49,8 +55,14 @@ export default function IvrNodeEditor({
     const [timeout, setTimeoutVal] = useState(5);
     const [targetExten, setTargetExten] = useState("");
     const [mailbox, setMailbox] = useState("");
+    const [transferMode, setTransferMode] = useState<"exten" | "queue">("exten")
+    const [queueId, setQueueId] = useState<number | null>(null); 
     const [soundUploading, setSoundUploading] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
+
+    const [selectedUserId, setSelectedUserId] = useState<number | "">("");
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!editorMode) return;
@@ -64,6 +76,15 @@ export default function IvrNodeEditor({
             setTimeoutVal(n.config.timeout ?? 5);
             setTargetExten(n.config.target_exten ?? "");
             setMailbox(n.config.mailbox ?? "");
+            if (n.queue_id) {
+                setTransferMode("queue");
+                setQueueId(n.queue_id);
+            } else {
+                setTransferMode("exten");
+                setQueueId(null);
+            }
+            const matched = users.find(u => u.extension === n.config.target_exten);
+            setSelectedUserId(matched ? matched.id : "");
         } else {
             setNodeType("greeting");
             setName("");
@@ -73,8 +94,22 @@ export default function IvrNodeEditor({
             setTimeoutVal(5);
             setTargetExten("");
             setMailbox("");
+            setTransferMode("exten");
+            setQueueId(null);
+            setSelectedUserId("");
+            setDropdownOpen(false);
         }
-    }, [editorMode]);
+    }, [editorMode, users]);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
 
     if (!editorMode) {
         return (
@@ -84,16 +119,39 @@ export default function IvrNodeEditor({
         );
     }
 
+    const handleUserSelect = (userId: number | "") => {
+        setSelectedUserId(userId);
+        setDropdownOpen(false);
+        if (userId === "") {
+            setTargetExten("");
+            return;
+        }
+        const user = users.find(u => u.id === userId);
+        if (user?.extension) setTargetExten(user.extension);
+    };
+
+    const roleLabel = (role: string) => {
+        switch (role) {
+            case "SYSTEM_ADMIN": return { label: "시스템 관리자", cls: styles.roleAdmin };
+            case "MANAGER":      return { label: "업체 관리자",   cls: styles.roleManager };
+            case "AGENT":        return { label: "상담원",        cls: styles.roleAgent };
+            default:             return { label: role,            cls: styles.badgeGray };
+        }
+    };
+
     const buildConfig = () => {
         if (nodeType === "greeting") return { message };
         if (nodeType === "menu") return { prompt, timeout };
-        if (nodeType === "transfer") return { target_exten: targetExten };
+        if (nodeType === "transfer") return transferMode === "exten" ? { target_exten: targetExten } : {};
         if (nodeType === "voicemail") return { mailbox };
         return {};
     };
 
     const handleSave = () => {
         if (!name.trim()) return;
+
+        const resolvedQueueId = nodeType === "transfer" && transferMode === "queue" ? queueId : null;
+
         if (editorMode.mode === "add") {
             const data: IvrNodeCreate = {
                 flow_id: editorMode.flowId,
@@ -102,6 +160,7 @@ export default function IvrNodeEditor({
                 name: name.trim(),
                 dtmf_key: dtmfKey || null,
                 config: buildConfig(),
+                queue_id: resolvedQueueId,
             };
             onSaveAdd(data);
         } else {
@@ -110,6 +169,7 @@ export default function IvrNodeEditor({
                 name: name.trim(),
                 dtmf_key: dtmfKey || null,
                 config: buildConfig(),
+                queue_id: resolvedQueueId,
             };
             onSaveEdit(editorMode.node.id, data);
         }
@@ -223,8 +283,91 @@ export default function IvrNodeEditor({
 
                 {nodeType === "transfer" && (
                     <>
-                        <label className="ivr-field-label">연결 내선번호</label>
-                        <input className="ivr-field-input" value={targetExten} onChange={e => setTargetExten(e.target.value)} placeholder="예: 1001" />
+                        <label className="ivr-field-label">연결 유형</label>
+                        <div className="ivr-transfer-mode-options">
+                            <label className="ivr-transfer-mode-option">
+                                <input 
+                                    type="radio"
+                                    name="transferMode"
+                                    value="exten"
+                                    checked={transferMode === "exten"}
+                                    onChange={() => setTransferMode("exten")} 
+                                />
+                                내선번호
+                            </label>
+                            <label className="ivr-transfer-mode-option">
+                                <input
+                                    type="radio"
+                                    name="transferMode"
+                                    value="queue"
+                                    checked={transferMode === "queue"}
+                                    onChange={() => setTransferMode("queue")}
+                                />
+                                큐 연결
+                            </label>
+                        </div>
+                        {transferMode === "exten" ? (
+                            <>
+                                <label className="ivr-field-label">연결 상담원</label>
+                                <div className={styles.dropdown} ref={dropdownRef}>
+                                    <button
+                                        type="button"
+                                        className={styles.trigger}
+                                        onClick={() => setDropdownOpen(v => !v)}
+                                    >
+                                        {selectedUserId !== "" ? (() => {
+                                            const u = users.find(x => x.id === selectedUserId);
+                                            return u ? (
+                                                <span className={styles.triggerItem}>
+                                                    <span className={`${styles.dot} ${u.is_active ? styles.dotActive : styles.dotInactive}`} />
+                                                    <span className={styles.userName}>{u.name}</span>
+                                                    {u.extension && <span className={styles.exten}>({u.extension})</span>}
+                                                    <span className={`${styles.badge} ${roleLabel(u.role).cls}`}>{roleLabel(u.role).label}</span>
+                                                </span>
+                                            ) : null;
+                                        })() : (
+                                            <span className={styles.placeholder}>상담원을 선택하세요</span>
+                                        )}
+                                        <span className={styles.arrow}>{dropdownOpen ? "▲" : "▼"}</span>
+                                    </button>
+                                    {dropdownOpen && (
+                                        <ul className={styles.list}>
+                                            <li
+                                                className={`${styles.item} ${selectedUserId === "" ? styles.itemSelected : ""}`}
+                                                onClick={() => handleUserSelect("")}
+                                            >
+                                                <span className={styles.placeholder}>선택 안 함</span>
+                                            </li>
+                                            {users.filter(u => u.role !== "SYSTEM_ADMIN" && u.extension).map(u => (
+                                                <li
+                                                    key={u.id}
+                                                    className={`${styles.item} ${selectedUserId === u.id ? styles.itemSelected : ""}`}
+                                                    onClick={() => handleUserSelect(u.id)}
+                                                >
+                                                    <span className={`${styles.dot} ${u.is_active ? styles.dotActive : styles.dotInactive}`} />
+                                                    <span className={styles.userName}>{u.name}</span>
+                                                    <span className={styles.exten}>({u.extension})</span>
+                                                    <span className={`${styles.badge} ${roleLabel(u.role).cls}`}>{roleLabel(u.role).label}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <label className="ivr-field-label">연결 큐</label>
+                                <select
+                                    className="ivr-field-select"
+                                    value={queueId ?? ""}
+                                    onChange={e => setQueueId(e.target.value ? Number(e.target.value) : null)}
+                                >
+                                    <option value="">큐를 선택하세요</option>
+                                    {queues.map(q => <option key={q.id} value={q.id}>{q.name}</option>)}
+                                </select>
+                            </>
+                        )}
+                    
                     </>
                 )}
 

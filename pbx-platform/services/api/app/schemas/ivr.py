@@ -21,6 +21,7 @@ class IvrNodeCreate(BaseModel):
     name: str
     config: dict[str, Any]
     sort_order: int = 0
+    queue_id: Optional[int] = None
 
 class IvrNodeUpdate(BaseModel):
     parent_id: Optional[int] = None
@@ -29,6 +30,7 @@ class IvrNodeUpdate(BaseModel):
     name: Optional[str] = None
     config: Optional[dict[str, Any]] = None
     sort_order: Optional[int] = None
+    queue_id: Optional[int] = None
 
 class IvrNodeResponse(BaseModel):
     id: int
@@ -39,6 +41,7 @@ class IvrNodeResponse(BaseModel):
     name: str
     config: dict[str, Any]
     sort_order: int
+    queue_id: Optional[int] = None
     sound: Optional[IvrSoundResponse] = None
     class Config:
         from_attributes = True

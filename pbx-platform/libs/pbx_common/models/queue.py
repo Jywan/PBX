@@ -10,6 +10,7 @@ from .base import Base
 if TYPE_CHECKING:
     from .company import Company
     from .user import User
+    from .ivr import IvrNode
 
 class Queue(Base):
     __tablename__ = "queues"
@@ -35,6 +36,7 @@ class Queue(Base):
 
     company: Mapped[Optional["Company"]] = relationship("Company", back_populates="queues")
     members: Mapped[List["QueueMember"]] = relationship("QueueMember", back_populates="queue", cascade="all, delete-orphan")
+    ivr_nodes: Mapped[List["IvrNode"]] = relationship("IvrNode", back_populates="queue")
 
 class QueueMember(Base):
     __tablename__ = "queue_members"

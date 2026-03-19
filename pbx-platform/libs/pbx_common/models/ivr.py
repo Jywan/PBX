@@ -1,9 +1,12 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 from sqlalchemy import Integer, Text, Boolean, ForeignKey, TIMESTAMP, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
+
+if TYPE_CHECKING:
+    from .queue import Queue
 
 class IvrFlow(Base):
     __tablename__ = "ivr_flows"
@@ -37,6 +40,9 @@ class IvrNode(Base):
     parent_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("ivr_nodes.id", ondelete="CASCADE"), nullable=True
     )
+    queue_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("queues.id", ondelete="SET NULL"), nullable=True
+    )
     dtmf_key: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     node_type: Mapped[str] = mapped_column(Text, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -50,6 +56,7 @@ class IvrNode(Base):
     sound: Mapped[Optional["IvrSound"]] = relationship(
         "IvrSound", back_populates="node", uselist=False, cascade="all, delete-orphan"
     )
+    queue: Mapped[Optional["Queue"]] = relationship("Queue", back_populates="ivr_nodes")
 
 
 class IvrSound(Base):

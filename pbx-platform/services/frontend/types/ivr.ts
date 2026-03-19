@@ -26,6 +26,7 @@ export interface IvrNode {
     name: string;
     config: IvrNodeConfig;
     sort_order: number;
+    queue_id?: number | null;
     sound?: IvrSound | null;
     children?: IvrNode[];
 }
@@ -60,6 +61,7 @@ export interface IvrNodeCreate {
     name: string;
     config?: IvrNodeConfig;
     sort_order?: number;
+    queue_id?: number | null;
 }
 
 export interface IvrNodeUpdate {
@@ -69,4 +71,5 @@ export interface IvrNodeUpdate {
     name?: string;
     config?: IvrNodeConfig;
     sort_order?: number;
+    queue_id?: number | null;
 }

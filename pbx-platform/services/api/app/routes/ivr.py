@@ -63,7 +63,7 @@ async def create_flow(
     db: AsyncSession = Depends(get_db),
     _: object = Depends(require_permission("ivr-create")),
 ):
-    flow = IvrFlow(**data.model_dump)
+    flow = IvrFlow(**data.model_dump())
     db.add(flow)
     await db.commit()
     result = await db.execute(_flow_stmt(IvrFlow.id == flow.id))
@@ -169,6 +169,13 @@ async def create_node(
     check = await db.execute(select(IvrFlow).where(IvrFlow.id == flow_id))
     if not check.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="IVR 플로우를 찾을 수 없습니다.")
+
+    if data.queue_id is not None:
+        from pbx_common.models.queue import Queue
+        queue = await db.get(Queue, data.queue_id)
+        if not queue:
+            raise HTTPException(status_code=404, detail="존재하지 않는 큐입니다.")
+
     node= IvrNode(flow_id=flow_id, **data.model_dump())
     db.add(node)
     await db.commit()
@@ -190,6 +197,13 @@ async def update_node(
     node = result.scalar_one_or_none()
     if not node:
         raise HTTPException(status_code=404, detail="노드를 찾을 수 없습니다.")
+    
+    if data.queue_id is not None:
+        from pbx_common.models.queue import Queue
+        queue = await db.get(Queue, data.queue_id)
+        if not queue:
+            raise HTTPException(status_code=404, detail="존재하지 않는 큐입니다.")
+
     for key,value in data.model_dump(exclude_unset=True).items():
         setattr(node, key, value)
     await db.commit()

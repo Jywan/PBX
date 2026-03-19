@@ -659,3 +659,26 @@
     transition: background 0.12s;
 }
 .ivr-sound-upload-label:hover { background: #f3f4f6; }
+
+/* ============================
+    연결 유형 토글 (transfer 노드)
+============================ */
+.ivr-transfer-mode-group {
+    display: flex;
+    gap: 12px;
+    padding: 4px 0;
+}
+
+.ivr-transfer-mode-option {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+}
+
+.ivr-transfer-mode-option input[type="radio"] {
+    accent-color: #4f80ff;
+    cursor: pointer;
+}
