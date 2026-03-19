@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     ari_user: str = "ari-user"
     ari_pass: str = ""
     ari_app: str = "pbx_ari"
+    outbound_trunk: str = ""    # 외부 번호 발신용 PJSIP 트렁크 이름
 
     # 선택 변수 (기본값 있음)
     api_title: str = "PBX API"

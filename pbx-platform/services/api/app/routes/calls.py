@@ -70,12 +70,23 @@ async def read_calls(
 @router.post("/calls/originate")
 async def originate_call(extension: str):
     settings = get_settings()
+
+    digits_only = "".join(c for c in extension if c.isdigit())
+    is_external = len(digits_only) > 5
+
+    if is_external:
+        if not settings.outbound_trunk:
+            raise HTTPException(status_code=400, detail="외부 번호 발신을 위한 트렁크가 설정되지 않았습니다. (OUTBOUND_TRUNK)")
+        endpoint = f"PJSIP/{extension}@{settings.outbound_trunk}"
+    else:
+        endpoint = f"PJSIP/{extension}"
+
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"http://{settings.ari_host}:{settings.ari_port}/ari/channels",
             auth=(settings.ari_user, settings.ari_pass),
             params={
-                "endpoint": f"PJSIP/{extension}",
+                "endpoint": endpoint,
                 "app": settings.ari_app,
                 "appArgs": f"direct,{extension}",
                 "callerId": "WebCall",
@@ -84,4 +95,4 @@ async def originate_call(extension: str):
         )
     if resp.status_code not in (200, 204):
         raise HTTPException(status_code=resp.status_code, detail=resp.text)
-    return { "status": "ringing", "extension": extension }
+    return { "status": "ringing", "extension": extension, "external": is_external }

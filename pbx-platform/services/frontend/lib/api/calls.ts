@@ -32,3 +32,14 @@ export const fetchCalls = async (
     });
     return response.data;
 };
+
+export const originateCall = async (token: string, extension: string): Promise<void> => {
+    await apiClient.post(
+        `${API_URL}/api/v1/calls/originate`,
+        null,
+        {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { extension },
+        }
+    );
+};

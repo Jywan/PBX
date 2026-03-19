@@ -117,3 +117,49 @@
     0%, 100% { height: 4px; }
     50% { height: 12px; }
 }
+
+/* 발신 위젯 */
+.dial-widget {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dial-input {
+    width: 110px;
+    padding: 6px 10px;
+    border: 1px solid #e5e8eb;
+    border-radius: 8px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.12s;
+}
+
+.dial-input:focus {
+    border-color: #4f80ff;
+}
+
+.dial-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: #3182f6;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.dial-btn:hover:not(:disabled) {
+    background: #1b64da;
+}
+
+.dial-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

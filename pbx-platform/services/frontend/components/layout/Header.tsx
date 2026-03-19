@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import axios from "axios";
 import Cookies from "js-cookie";
 import { getUserInfoFromToken } from "@/lib/auth";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useAuthStore } from "@/store/authStore";
 import StatusDropdown from "@/components/ui/StatusDropdown";
+import { originateCall } from "@/lib/api/calls";
+import apiClient from "@/lib/api/client";
+import { API_URL } from "@/lib/config";
 
 const roleMap: Record<string, string> = {
     AGENT: "상담원",
@@ -30,17 +32,17 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
         toggleAudio,
     } = useWebRTC();
 
-    // store activity가 외부(로그인 등)에서 바뀌면 동기화
+    const [dialExten, setDialExten] = useState("");
+    const [dialing, setDialing] = useState(false);
+
     useEffect(() => {
         setCurrentActivity(storeActivity || "DISABLED");
     }, [storeActivity]);
 
-    // activity 변경 공통 함수 (API 호출 + 상태 업데이트)
     const handleActivityChange = async (newActivity: string) => {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL;
-        const token = Cookies.get('access_token');
+        const token = Cookies.get("access_token");
         try {
-            await axios.patch(
+            await apiClient.patch(
                 `${API_URL}/api/v1/auth/activity`,
                 { activity: newActivity },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -52,7 +54,6 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
         }
     };
 
-    // [연계] 상대방 스트림 수신 시 '통화중' 전환
     useEffect(() => {
         if (remoteStream && remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = remoteStream;
@@ -68,15 +69,29 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
         }
     }, []);
 
-    // [연계] 통화 종료 시 '후처리' 전환
     const handleStopCall = () => {
         stopLocalStream();
         handleActivityChange("POST_PROCESSING");
     };
 
+    const handleDial = async () => {
+        if (!dialExten.trim()) return;
+        const token = Cookies.get("access_token");
+        if (!token) return;
+        setDialing(true);
+        try {
+            await originateCall(token, dialExten.trim());
+            setDialExten("");
+        } catch (err) {
+            console.error("발신 실패:", err);
+        } finally {
+            setDialing(false);
+        }
+    };
+
     return (
         <header className="layout-header">
-            <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div className="header-left" style={{ display: "flex", alignItems: "center", gap: "20px" }}>
                 <audio ref={remoteAudioRef} autoPlay playsInline />
 
                 <StatusDropdown
@@ -84,25 +99,45 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
                     onActivityChange={handleActivityChange}
                 />
 
+                {/* 발신 위젯 */}
+                <div className="dial-widget">
+                    <input
+                        className="dial-input"
+                        type="text"
+                        placeholder="내선번호"
+                        value={dialExten}
+                        onChange={e => setDialExten(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleDial()}
+                        disabled={dialing}
+                    />
+                    <button
+                        className="dial-btn"
+                        onClick={handleDial}
+                        disabled={dialing || !dialExten.trim()}
+                    >
+                        {dialing ? "발신 중..." : "📞 발신"}
+                    </button>
+                </div>
+
                 {localStream && (
-                    <div className="call-active-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', borderLeft: '1px solid #ddd', paddingLeft: '20px' }}>
-                        <div className="call-status-indicator" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="call-active-group" style={{ display: "flex", alignItems: "center", gap: "10px", borderLeft: "1px solid #ddd", paddingLeft: "20px" }}>
+                        <div className="call-status-indicator" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                             <span className="status-dot blink"></span>
-                            <span className="status-text" style={{ fontSize: '14px', fontWeight: '600', color: '#e74c3c' }}>
-                                {currentActivity === 'CALLING' ? '연결 중...' : '통화 중'}
+                            <span className="status-text" style={{ fontSize: "14px", fontWeight: "600", color: "#e74c3c" }}>
+                                {currentActivity === "CALLING" ? "연결 중..." : "통화 중"}
                             </span>
                         </div>
                         <button
                             className={`call-sub-btn ${isAudioMuted ? "muted" : ""}`}
                             onClick={toggleAudio}
-                            style={{ padding: '4px 12px', borderRadius: '4px', fontSize: '13px' }}
+                            style={{ padding: "4px 12px", borderRadius: "4px", fontSize: "13px" }}
                         >
                             {isAudioMuted ? "🔇 마이크 켬" : "🎤 음소거"}
                         </button>
                         <button
                             className="call-btn stop"
                             onClick={handleStopCall}
-                            style={{ backgroundColor: '#e74c3c', color: '#fff', padding: '4px 12px', borderRadius: '4px', fontSize: '13px', border: 'none', cursor: 'pointer' }}
+                            style={{ backgroundColor: "#e74c3c", color: "#fff", padding: "4px 12px", borderRadius: "4px", fontSize: "13px", border: "none", cursor: "pointer" }}
                         >
                             종료
                         </button>
@@ -110,7 +145,7 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
                 )}
             </div>
 
-            <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div className="header-right" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                 {userData && (
                     <div className="user-profile-brief">
                         <span className="user-role-tag">
