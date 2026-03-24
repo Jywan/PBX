@@ -79,7 +79,7 @@ export default function Header({ onLogout }: { onLogout: () => void }) {
                     <input
                         className="dial-input"
                         type="text"
-                        placeholder="내선번호"
+                        placeholder="010-0000-0000"
                         value={dialExten}
                         onChange={e => setDialExten(e.target.value)}
                         onKeyDown={e => e.key === "Enter" && handleDial()}

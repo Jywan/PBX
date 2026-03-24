@@ -122,32 +122,42 @@
 .dial-widget {
     display: flex;
     align-items: center;
-    gap: 6px;
+    border: 1px solid #e5e8eb;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.dial-widget:focus-within {
+    border-color: #4f80ff;
+    box-shadow: 0 0 0 3px rgba(79, 128, 255, 0.12);
 }
 
 .dial-input {
-    width: 110px;
-    padding: 6px 10px;
-    border: 1px solid #e5e8eb;
-    border-radius: 8px;
+    width: 180px;
+    height: 36px;
+    padding: 0 12px;
+    border: none;
     font-size: 13px;
     outline: none;
-    transition: border-color 0.12s;
+    background: transparent;
 }
 
-.dial-input:focus {
-    border-color: #4f80ff;
+.dial-input::placeholder {
+    text-align: center;
+    color: #b0b8c1;
 }
 
 .dial-btn {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 6px 12px;
+    height: 36px;
+    padding: 0 14px;
     background: #3182f6;
     color: #fff;
     border: none;
-    border-radius: 8px;
+    border-left: 1px solid #e5e8eb;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
