@@ -25,6 +25,7 @@ export default function CustomerTemplate() {
         GROUPS, companies,
         groupCounts, filtered, selectedCustomer, selectedId,
         selectedGroup, search, setSearch,
+        selectedCompanyId, setSelectedCompanyId,
         editMode, editForm, setEditForm,
         showAddModal, setShowAddModal,
         newForm, setNewForm,
@@ -71,6 +72,10 @@ export default function CustomerTemplate() {
                 getGroupColor={getGroupColor}
                 canCreate={canCreate}
                 canDelete={canDelete}
+                isSystemAdmin={isSystemAdmin}
+                companies={companies}
+                selectedCompanyId={selectedCompanyId}
+                onCompanyChange={setSelectedCompanyId}
             />
             <CustomerDetail
                 selectedCustomer={selectedCustomer}

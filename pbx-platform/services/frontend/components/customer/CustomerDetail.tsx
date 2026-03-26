@@ -150,7 +150,7 @@ export default function CustomerDetail({
                 </div>
                 <div className="detail-field-row">
                     <span className="detail-field-label">등록일</span>
-                    <span className="detail-field-value">{selectedCustomer.created_at}</span>
+                    <span className="detail-field-value">{formatDateTime(selectedCustomer.created_at)}</span>
                 </div>
             </div>
 

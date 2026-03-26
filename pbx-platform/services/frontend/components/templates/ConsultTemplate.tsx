@@ -13,7 +13,10 @@ export default function ConsultTemplate() {
         memo, setMemo,
         callTimer,
         customer,
-        handleSelectCall, handleEndCall,
+        categories,
+        consultCategoryId, setConsultCategoryId,
+        consultSaving,
+        handleSelectCall, handleEndCall, handleSaveConsult, handleCreateCustomer,
     } = useConsultData();
 
     return (
@@ -31,10 +34,16 @@ export default function ConsultTemplate() {
                 setMemo={setMemo}
                 callTimer={callTimer}
                 onEndCall={handleEndCall}
+                categories={categories}
+                consultCategoryId={consultCategoryId}
+                onCategoryChange={setConsultCategoryId}
+                onSaveConsult={handleSaveConsult}
+                consultSaving={consultSaving}
             />
             <ConsultCustomerInfo
                 selectedCall={selectedCall}
                 customer={customer}
+                onCreateCustomer={handleCreateCustomer}
             />
         </div>
     );

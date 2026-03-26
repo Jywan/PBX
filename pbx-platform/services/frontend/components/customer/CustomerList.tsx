@@ -4,6 +4,7 @@ import { Search, Plus, Phone, User, Trash2 } from "lucide-react";
 import { formatDateOnly } from "@/lib/utils/date";
 import { formatPhoneNumber } from "@/lib/utils/validation";
 import type { Customer } from "@/types/customer";
+import type { Company } from "@/types/company";
 
 interface CustomerListProps {
     filtered: Customer[];
@@ -17,6 +18,10 @@ interface CustomerListProps {
     getGroupColor: (id: string) => string;
     canCreate: boolean;
     canDelete: boolean;
+    isSystemAdmin: boolean;
+    companies: Company[];
+    selectedCompanyId: number | null;
+    onCompanyChange: (id: number | null) => void;
 }
 
 export default function CustomerList({
@@ -24,18 +29,31 @@ export default function CustomerList({
     onSearchChange, onSelect, onDelete, onAddOpen,
     getGroupLabel, getGroupColor,
     canCreate, canDelete,
+    isSystemAdmin, companies, selectedCompanyId, onCompanyChange,
 }: CustomerListProps) {
     return (
         <section className="customer-col customer-col-list">
             <div className="list-toolbar">
                 <h3 className="customer-title" style={{ margin: 0 }}>고객 목록</h3>
                 <div className="list-toolbar-right">
+                    {isSystemAdmin && (
+                        <select
+                            className="company-filter-select"
+                            value={selectedCompanyId ?? ""}
+                            onChange={e => onCompanyChange(e.target.value ? Number(e.target.value) : null)}
+                        >
+                            <option value="">전체 회사</option>
+                            {companies.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    )}
                     <div className="search-warp">
                         <Search size={13} className="search-icon" />
                         <input
                             type="text"
                             className="search-input"
-                            placeholder="이름, 전화번호, 회사"
+                            placeholder="이름, 전화번호"
                             value={search}
                             onChange={e => onSearchChange(e.target.value)}
                         />

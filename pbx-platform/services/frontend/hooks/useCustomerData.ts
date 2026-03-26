@@ -32,6 +32,7 @@ export function useCustomerData({ token, showToast, isSystemAdmin, companyId }: 
     const [companies, setCompanies] = useState<Company[]>([]);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [selectedGroup, setSelectedGroup] = useState("all");
+    const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
     const [search, setSearch] = useState("");
 
     const [editMode, setEditMode] = useState(false);
@@ -52,17 +53,21 @@ export function useCustomerData({ token, showToast, isSystemAdmin, companyId }: 
 
     const filtered = useMemo(() => {
         let result = customers;
+        if (!isSystemAdmin && companyId) {
+            result = result.filter(c => c.company_id === companyId);
+        } else if (isSystemAdmin && selectedCompanyId) {
+            result = result.filter(c => c.company_id === selectedCompanyId);
+        }
         if (selectedGroup !== "all") result = result.filter(c => c.group === selectedGroup);
         if (search.trim()) {
             const q = search.toLowerCase();
             result = result.filter(c =>
                 c.name.toLowerCase().includes(q) ||
-                c.phone.includes(q) ||
-                (c.company_name && c.company_name.toLowerCase().includes(q))
+                c.phone.includes(q)
             );
         }
         return result;
-    }, [customers, selectedGroup, search]);
+    }, [customers, selectedGroup, search, isSystemAdmin, companyId, selectedCompanyId]);
 
     const loadCustomers = async () => {
         if (!token) return;
@@ -165,6 +170,7 @@ export function useCustomerData({ token, showToast, isSystemAdmin, companyId }: 
         GROUPS, companies, isSystemAdmin,
         groupCounts, filtered, selectedCustomer, selectedId,
         selectedGroup, search, setSearch,
+        selectedCompanyId, setSelectedCompanyId,
         editMode, editForm, setEditForm,
         showAddModal, setShowAddModal,
         newForm, setNewForm,

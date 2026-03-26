@@ -94,6 +94,19 @@
     gap: 8px;
 }
 
+.company-filter-select {
+    padding: 6px 10px;
+    border: 1px solid #e5e8eb;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #191f28;
+    background-color: #fff;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+.company-filter-select:focus { border-color: #3b82f6; }
+
 .search-warp {
     position: relative;
     display: flex;

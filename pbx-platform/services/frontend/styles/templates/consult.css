@@ -245,6 +245,22 @@
     height: 100%;
 }
 
+.memo-category-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #e5e8eb;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #191f28;
+    background-color: #fff;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+}
+
+.memo-category-select:focus { border-color: #3b82f6; }
+
 .memo-textarea {
     flex: 1;
     width: 100%;
@@ -307,6 +323,73 @@
     margin: 0;
 }
 
+/* ── 우측: 고객 등록 폼 ── */
+.customer-register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.creg-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.creg-label {
+    font-size: 12px;
+    color: #8b95a1;
+    font-weight: 500;
+}
+
+.creg-input {
+    padding: 8px 12px;
+    border: 1px solid #e5e8eb;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #191f28;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.creg-input:focus { border-color: #3b82f6; }
+.creg-input::placeholder { color: #c5ccd5; }
+
+.creg-textarea {
+    padding: 8px 12px;
+    border: 1px solid #e5e8eb;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #191f28;
+    outline: none;
+    resize: none;
+    height: 72px;
+    transition: border-color 0.15s;
+    font-family: inherit;
+}
+
+.creg-textarea:focus { border-color: #3b82f6; }
+
+.creg-btn-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 0;
+    background-color: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 4px;
+}
+
+.creg-btn-submit:hover:not(:disabled) { background-color: #2563eb; }
+.creg-btn-submit:disabled { background-color: #d1d6db; cursor: not-allowed; }
+
 /* ── 우측: 고객 정보 ── */
 .customer-card {
     display: flex;
@@ -366,6 +449,17 @@
     color: #191f28;
     font-weight: 500;
 }
+
+.customer-group-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.customer-group-badge.group-normal   { background: #e8f4fd; color: #1d6fa4; }
+.customer-group-badge.group-vip      { background: #fef9e7; color: #b7860a; }
+.customer-group-badge.group-blacklist { background: #fdecea; color: #c0392b; }
 
 .customer-memo-box {
     background-color: #fffbeb;

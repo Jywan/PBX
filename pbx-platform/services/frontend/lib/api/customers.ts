@@ -27,6 +27,13 @@ export const fetchCustomers = async (token: string): Promise<Customer[]> => {
     return res.data;
 };
 
+export const fetchCustomerByPhone = async (token: string, phone: string): Promise<Customer | null> => {
+    const res = await apiClient.get<Customer[]>(`${API_URL}/api/v1/customers?search=${encodeURIComponent(phone)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.find(c => c.phone === phone) ?? null;
+};
+
 export const createCustomer = async (token: string, data: CustomerCreate): Promise<Customer> => {
     const res = await apiClient.post<Customer>(`${API_URL}/api/v1/customers`, data, {
         headers: { Authorization: `Bearer ${token}` },

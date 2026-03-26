@@ -3,6 +3,7 @@
 import { FileText, BookOpen, PhoneOff, Clock } from "lucide-react";
 import { formatTimer } from "@/lib/utils/date";
 import type { WaitingCall } from "@/hooks/useConsultData";
+import type { ConsultCategory } from "@/types/consult";
 
 interface ConsultWorkProps {
     selectedCall: WaitingCall | null;
@@ -12,20 +13,21 @@ interface ConsultWorkProps {
     setMemo: (v: string) => void;
     callTimer: number;
     onEndCall: () => void;
+    categories: ConsultCategory[];
+    consultCategoryId: number | null;
+    onCategoryChange: (id: number | null) => void;
+    onSaveConsult: () => void;
+    consultSaving: boolean;
 }
 
 export default function ConsultWork({
     selectedCall, activeTab, setActiveTab, memo, setMemo, callTimer, onEndCall,
+    categories, consultCategoryId, onCategoryChange, onSaveConsult, consultSaving,
 }: ConsultWorkProps) {
     return (
         <section className="consult-col col-center-work">
-            {!selectedCall ? (
-                <div className="consult-empty-state">
-                    <FileText size={40} strokeWidth={1.5} />
-                    <p>인입 목록에서 통화를 선택하세요</p>
-                </div>
-            ) : (
-                <>
+            <>
+                {selectedCall && (
                     <div className="call-info-bar">
                         <div className="call-info-left">
                             <span className="call-stauts-dot blink" />
@@ -43,6 +45,7 @@ export default function ConsultWork({
                             통화 종료
                         </button>
                     </div>
+                )}
 
                     <div className="consult-tab">
                         <button
@@ -62,27 +65,43 @@ export default function ConsultWork({
                     <div className="consult-tab-content">
                         {activeTab === "memo" ? (
                             <div className="memo-area">
+                                <select
+                                    className="memo-category-select"
+                                    value={consultCategoryId ?? ""}
+                                    onChange={e => onCategoryChange(e.target.value ? Number(e.target.value) : null)}
+                                >
+                                    <option value="">카테고리 선택</option>
+                                    {categories.map(cat => (
+                                        <option key={cat.id} value={cat.id}>
+                                            {"　".repeat(cat.depth)}{cat.name}
+                                        </option>
+                                    ))}
+                                </select>
                                 <textarea
                                     className="memo-textarea"
                                     placeholder="상담 내용을 입력하세요..."
                                     value={memo}
                                     onChange={e => setMemo(e.target.value)}
-                                >
+                                />
                                 <div className="memo-footer">
                                     <span className="memo-char-count">{memo.length}자</span>
-                                    <button className="btn-save-memo" disabled={!memo.trim()}>저장</button>
+                                    <button
+                                        className="btn-save-memo"
+                                        disabled={!memo.trim() || consultSaving}
+                                        onClick={onSaveConsult}
+                                    >
+                                        {consultSaving ? "저장 중..." : "저장"}
+                                    </button>
                                 </div>
-                                </textarea>
                             </div>
                         ) : (
                             <div className="consult-empty-state">
-                                    <BookOpen size={32} strokeWidth={1.5} />
-                                    <p>등록된 스크립트가 없습니다.</p>
-                                </div>
+                                <BookOpen size={32} strokeWidth={1.5} />
+                                <p>등록된 스크립트가 없습니다.</p>
+                            </div>
                         )}
                     </div>
-                </>
-            )}
+            </>
         </section>
     );
 }
