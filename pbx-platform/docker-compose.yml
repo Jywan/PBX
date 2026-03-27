@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: pbx-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pbx
+      POSTGRES_USER: pbx
+      POSTGRES_PASSWORD: pbxpassword
+      TZ: Asia/Seoul
+    ports:
+      - "5432:5432"
+    volumes:
+      - pbx_pgdata:/var/lib/postgresql/data
+
+volumes:
+  pbx_pgdata:

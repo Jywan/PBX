@@ -11,13 +11,6 @@ __pycache__/
 .DS_Store
 .vscode/
 
-# Asterisk runtime / config (local only)
-asterisk/
-
-# Docker
-docker-compose.yml
-Dockerfile
-
 # Frontend 빌드 및 패키지
 node_modules/
 .next/
