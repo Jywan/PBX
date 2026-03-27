@@ -142,7 +142,8 @@ cd pbx-platform/services/api && uvicorn app.main:app --reload
 | started_at | TIMESTAMP | 통화 시작 |
 | answered_at | TIMESTAMP | 연결 시각 |
 | ended_at | TIMESTAMP | 종료 시각 |
-| hangup_cause | Text | 종료 코드 |
+| hangup_cause | Integer | Q.850 종료 코드 |
+| hangup_reason | Text | 종료 사유 텍스트 |
 | direction | Text | inbound / outbound |
 | status | Text | |
 
@@ -166,6 +167,7 @@ cd pbx-platform/services/api && uvicorn app.main:app --reload
 | timeout | Integer | 링 타임아웃 (초) |
 | wrapuptime | Integer | 후처리 시간 |
 | maxlen | Integer | 최대 대기 수 |
+| music_on_hold | Text | 대기 중 음악 클래스 |
 | is_active | Boolean | |
 
 ### queue_members (큐 멤버)
@@ -175,6 +177,7 @@ cd pbx-platform/services/api && uvicorn app.main:app --reload
 | queue_id | FK → queues | |
 | user_id | FK → user | |
 | interface | Text | `PJSIP/{exten}` |
+| membername | Text | 표시 이름 |
 | penalty | Integer | 우선순위 |
 | paused | Boolean | |
 
@@ -195,7 +198,7 @@ cd pbx-platform/services/api && uvicorn app.main:app --reload
 | parent_id | FK → ivr_nodes | 자기 참조 트리 구조 |
 | queue_id | FK → queues | 큐 연결 노드용 |
 | dtmf_key | Text | 버튼 입력값 (0-9, *, #) |
-| node_type | Text | menu / action / queue 등 |
+| node_type | Text | greeting / menu / transfer / hangup / voicemail |
 | name | Text | |
 | config | JSONB | 노드별 설정 |
 | sort_order | Integer | |
@@ -253,6 +256,7 @@ cd pbx-platform/services/api && uvicorn app.main:app --reload
 | login_status | Enum | LOGIN / LOGOUT |
 | activity | Enum | READY / POST_PROCESSING / CALLING / ON_CALL / AWAY / TRAINING / DISABLED |
 | last_login_at | TIMESTAMP | |
+| current_room_id | Text | 현재 접속 룸 ID |
 
 ### user_status_log (활동 이력)
 | 컬럼 | 타입 | 설명 |
@@ -330,10 +334,14 @@ cd pbx-platform/services/api && uvicorn app.main:app --reload
 |--------|------|-----------|------|
 | GET | `/` | `consult-list` | 목록 (date_from, date_to, agent_id, company_id, status 필터) |
 | POST | `/` | `consult-create` | 생성 |
+| GET | `/{consult_id}` | 인증 | 상담 상세 조회 |
 | PATCH | `/{consult_id}` | `consult-update` | 수정 (기존 SUPERSEDED → 신규 ACTIVE) |
+| PATCH | `/{consult_id}/link-call` | 인증 | 통화 연결 |
 | DELETE | `/{consult_id}` | `consult-delete` | Soft delete (INACTIVE) |
 | GET | `/categories` | 인증 | 분류 목록 |
 | POST | `/categories` | 인증 | 분류 생성 |
+| PATCH | `/categories/{category_id}` | 인증 | 분류 수정 |
+| DELETE | `/categories/{category_id}` | 인증 | 분류 삭제 |
 
 ### 회사 `/api/v1/companies`
 | Method | Path | 설명 |
@@ -348,6 +356,12 @@ cd pbx-platform/services/api && uvicorn app.main:app --reload
 |--------|------|------|
 | GET | `/` | 권한 트리 조회 |
 | POST | `/users/{user_id}/permissions` | 사용자 권한 일괄 설정 |
+
+### 통화 `/api/v1/calls`
+| Method | Path | 설명 |
+|--------|------|------|
+| GET | `/` | 통화 목록 조회 |
+| POST | `/originate` | 발신 호 생성 |
 
 ### 실시간 시그널링 `/api/v1/signaling`
 - WebSocket 연결로 실시간 이벤트 수신
@@ -427,6 +441,10 @@ services/frontend/
 | `useIvrData()` | 플로우/노드 상태 + 핸들러 | IVR 관리 로직 |
 | `useQueueData()` | 큐 상태 + 핸들러 | 큐 관리 로직 |
 | `useHistoryData()` | 이력 목록 + 필터 | 상담/통화 이력 조회 |
+| `useUserData()` | 사용자 상태 + CRUD 핸들러 | 사용자 관리 로직 |
+| `useCompanyData()` | 회사 상태 + CRUD 핸들러 | 회사 관리 로직 |
+| `usePermissionData()` | 권한 트리 + 설정 핸들러 | 권한 관리 로직 |
+| `useCall()` | 통화 상태 + 발신 핸들러 | 통화 처리 로직 |
 
 ### 날짜 포맷 유틸리티 (`lib/utils/date.ts`)
 
@@ -451,10 +469,10 @@ Asterisk ARI WebSocket
         ↓
   call_service.py
   ┌─────────────────────────────────────────┐
-  │  StasisStart       → 신규 채널 추적 시작 │
-  │  ChannelStateChange → 통화 상태 업데이트 │
-  │  BridgeCreated     → 브릿지 생성 기록    │
-  │  ChannelLeftBridge → 통화 종료 처리      │
+  │  StasisStart          → 신규 채널 추적 시작 │
+  │  BridgeCreated        → 브릿지 생성 기록    │
+  │  ChannelHangupRequest → 통화 종료 요청 처리 │
+  │  ChannelDestroyed     → 채널 소멸, 종료 기록│
   └─────────────────────────────────────────┘
         ↓
   call_recorder.py
@@ -513,9 +531,11 @@ Asterisk ARI WebSocket
 
 | node_type | 설명 |
 |-----------|------|
+| `greeting` | 안내 음성 재생 |
 | `menu` | DTMF 입력 분기 메뉴 |
-| `action` | 특정 동작 수행 |
-| `queue` | 큐로 연결 |
+| `transfer` | 내선 전환 |
+| `hangup` | 통화 종료 |
+| `voicemail` | 음성 메시지 |
 
 - 트리 구조: `parent_id` 자기 참조 (재귀 cascade delete)
 - 프리셋 플로우 (`is_preset=true`): 전체 회사 공용 사용 가능
